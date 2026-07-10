@@ -1,1 +1,88 @@
-h1 { font-family: Arial, Helvetica, sans-serif; }
+/* FreshCart - Custom styles beyond Tailwind utility classes */
+
+* { -webkit-tap-highlight-color: transparent; }
+
+body { scroll-behavior: smooth; }
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Skeleton loading shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Toast animation */
+.toast-enter { animation: toastIn 0.3s ease-out forwards; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cart badge pulse */
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+.pulse-badge { animation: pulse-badge 0.4s ease; }
+
+/* Fade in for page transitions */
+.page-fade { animation: pageFade 0.25s ease-out; }
+@keyframes pageFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* Line clamp utility fallback */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Progress bar for order tracking */
+.track-progress-bg { background: #e5e7eb; }
+.track-progress-fill {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  transition: width 0.6s ease;
+}
+
+/* Delivery bike bounce animation */
+@keyframes bike-move {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+.bike-anim { animation: bike-move 1s ease-in-out infinite; }
+
+/* Custom scrollbar for category chips */
+.chip-scroll::-webkit-scrollbar { height: 4px; }
+.chip-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+input:focus, textarea:focus { outline: none; }
+
+.otp-input {
+  width: 3rem; height: 3.5rem; text-align: center; font-size: 1.5rem; font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .otp-input { width: 2.5rem; height: 3rem; font-size: 1.25rem; }
+}
