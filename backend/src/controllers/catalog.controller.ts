@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../middlewares/asyncWrapper';
 import { HTTP_STATUS } from '../utils/constants';
 import * as catalogService from '../services/catalog.service';
+import { AppError } from '../utils/AppError';
 
 // ─── GET /categories ─────────────────────────────────────────────────────────
 
@@ -63,6 +64,9 @@ export const getProductDetail = catchAsync(async (req: Request, res: Response) =
 
 export const getProductImages = catchAsync(async (req: Request, res: Response) => {
   const productId = parseInt(req.params.id, 10);
+  if (!Number.isSafeInteger(productId) || productId < 1) {
+    throw new AppError('Product ID must be a positive integer.', HTTP_STATUS.BAD_REQUEST);
+  }
   const result = await catalogService.getProductImageGallery(productId);
 
   res.status(HTTP_STATUS.OK).json({

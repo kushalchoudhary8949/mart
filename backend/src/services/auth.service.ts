@@ -5,12 +5,14 @@ import { AppError } from '../utils/AppError';
 import { HTTP_STATUS } from '../utils/constants';
 import { normalizePhone } from '../utils/helpers';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
-import { comparePassword } from '../utils/password';
+import { redis } from '../config/redis';
 import * as otpService from './otp.service';
 import * as userRepo from '../repositories/user.repository';
 import * as tokenRepo from '../repositories/token.repository';
 
 // ─── Helper: Parse duration strings like "7d" or "15m" to milliseconds ──────
+
+const SESSION_PREFIX = 'auth:session';
 
 function parseDurationMs(duration: string): number {
   const match = duration.match(/^(\d+)([smhd])$/);
@@ -23,6 +25,47 @@ function parseDurationMs(duration: string): number {
     case 'h': return value * 60 * 60 * 1000;
     case 'd': return value * 24 * 60 * 60 * 1000;
     default:  return 7 * 24 * 60 * 60 * 1000;
+  }
+}
+
+function getSessionKey(userId: number, tokenId: number): string {
+  return `${SESSION_PREFIX}:${userId}:${tokenId}`;
+}
+
+async function persistSession(userId: number, tokenId: number, expiresAt: Date): Promise<void> {
+  try {
+    const ttlSeconds = Math.max(1, Math.ceil((expiresAt.getTime() - Date.now()) / 1000));
+    await redis.set(getSessionKey(userId, tokenId), '1', 'EX', ttlSeconds);
+  } catch (error) {
+    logger.warn(`Unable to persist auth session for user ${userId}:`, error);
+  }
+}
+
+async function deleteSession(userId: number, tokenId: number): Promise<void> {
+  try {
+    await redis.del(getSessionKey(userId, tokenId));
+  } catch (error) {
+    logger.warn(`Unable to delete auth session for user ${userId}:`, error);
+  }
+}
+
+async function deleteAllSessions(userId: number): Promise<void> {
+  try {
+    const keys = await redis.keys(`${SESSION_PREFIX}:${userId}:*`);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (error) {
+    logger.warn(`Unable to delete auth sessions for user ${userId}:`, error);
+  }
+}
+
+async function hasSession(userId: number, tokenId: number): Promise<boolean> {
+  try {
+    const value = await redis.get(getSessionKey(userId, tokenId));
+    return value === '1';
+  } catch {
+    return true;
   }
 }
 
@@ -54,8 +97,10 @@ async function createTokenPair(user: { id: number; phone: string; role: Role }) 
   const { prisma } = await import('../config/database');
   await prisma.refreshToken.update({
     where: { id: tempRecord.id },
-    data: { token: refreshToken, isUsed: false },
+    data: { token: refreshToken },
   });
+
+  await persistSession(user.id, tempRecord.id, expiresAt);
 
   return { accessToken, refreshToken };
 }
@@ -74,14 +119,14 @@ export async function requestOtp(phone: string) {
   const isDev = config.env === 'development';
 
   return {
-    message: 'OTP sent successfully.',
-    ...(isDev && { debug_otp: code }),
+    message: 'OTP generated successfully.',
+    ...(isDev && { mockOtp: code }),
   };
 }
 
 // ─── OTP Verify (Customer Login/Signup) ──────────────────────────────────────
 
-export async function verifyOtpAndLogin(phone: string, code: string, name?: string) {
+export async function verifyOtpAndLogin(phone: string, code: string) {
   const normalized = normalizePhone(phone);
   if (!normalized) {
     throw new AppError('Invalid phone number.', HTTP_STATUS.BAD_REQUEST);
@@ -90,12 +135,12 @@ export async function verifyOtpAndLogin(phone: string, code: string, name?: stri
   // 1. Verify OTP in Redis
   await otpService.verifyOtp(normalized, code);
 
-  // 2. Find or create user
-  const user = await userRepo.findOrCreateByPhone(normalized, name);
+  // 2. Create a CUSTOMER user when needed, and mark existing users verified.
+  const user = await userRepo.findOrCreateVerifiedByPhone(normalized);
 
-  if (!user.isActive) {
+  if (user.isBlocked) {
     throw new AppError(
-      'Your account has been deactivated. Contact support.',
+      'Your account has been blocked. Contact support.',
       HTTP_STATUS.FORBIDDEN
     );
   }
@@ -111,8 +156,8 @@ export async function verifyOtpAndLogin(phone: string, code: string, name?: stri
     user: {
       id: user.id,
       phone: user.phone,
-      name: user.name,
       role: user.role,
+      isVerified: user.isVerified,
     },
   };
 }
@@ -120,53 +165,21 @@ export async function verifyOtpAndLogin(phone: string, code: string, name?: stri
 // ─── Admin Login (Credentials) ──────────────────────────────────────────────
 
 export async function loginWithCredentials(phone: string, password: string) {
-  const normalized = normalizePhone(phone);
-  if (!normalized) {
-    throw new AppError('Invalid phone number.', HTTP_STATUS.BAD_REQUEST);
-  }
-
-  // 1. Find admin user
-  const user = await userRepo.findByPhoneAndRole(normalized, Role.ADMIN);
-  if (!user || !user.passwordHash) {
-    throw new AppError('Invalid credentials.', HTTP_STATUS.UNAUTHORIZED);
-  }
-
-  if (!user.isActive) {
-    throw new AppError(
-      'Your account has been deactivated. Contact support.',
-      HTTP_STATUS.FORBIDDEN
-    );
-  }
-
-  // 2. Verify password
-  const isMatch = await comparePassword(password, user.passwordHash);
-  if (!isMatch) {
-    throw new AppError('Invalid credentials.', HTTP_STATUS.UNAUTHORIZED);
-  }
-
-  // 3. Issue token pair
-  const { accessToken, refreshToken } = await createTokenPair(user);
-
-  logger.info(`Admin ${user.id} logged in via credentials.`);
-
-  return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: user.id,
-      phone: user.phone,
-      name: user.name,
-      role: user.role,
-    },
-  };
+  void phone;
+  void password;
+  throw new AppError(
+    'Password-based login is not configured. Verify an OTP instead.',
+    HTTP_STATUS.BAD_REQUEST
+  );
 }
 
 // ─── Refresh Token Rotation ─────────────────────────────────────────────────
 
 export async function refreshTokens(oldRefreshToken: string) {
   // 1. Verify JWT signature and expiry first
+  let decoded;
   try {
-    verifyRefreshToken(oldRefreshToken);
+    decoded = verifyRefreshToken(oldRefreshToken);
   } catch {
     throw new AppError('Invalid or expired refresh token.', HTTP_STATUS.UNAUTHORIZED);
   }
@@ -177,38 +190,36 @@ export async function refreshTokens(oldRefreshToken: string) {
     throw new AppError('Refresh token not found.', HTTP_STATUS.UNAUTHORIZED);
   }
 
-  // 3. Check if token was already used (replay attack detection)
-  if (tokenRecord.isUsed) {
-    // Token theft detected — revoke ALL tokens for this user
-    logger.warn(`🚨 Refresh token reuse detected for user ${tokenRecord.userId}. Revoking all tokens.`);
-    await tokenRepo.revokeAllUserTokens(tokenRecord.userId);
-    throw new AppError(
-      'Suspicious activity detected. All sessions have been revoked. Please log in again.',
-      HTTP_STATUS.UNAUTHORIZED
-    );
+  if (decoded.tokenId !== tokenRecord.id || decoded.userId !== tokenRecord.userId) {
+    throw new AppError('Invalid refresh token.', HTTP_STATUS.UNAUTHORIZED);
   }
 
-  // 4. Check if token is revoked
-  if (tokenRecord.isRevoked) {
+  // 3. Check if token is revoked
+  if (tokenRecord.revoked) {
     throw new AppError('Refresh token has been revoked.', HTTP_STATUS.UNAUTHORIZED);
   }
 
-  // 5. Check if token is expired (DB-level check)
+  // 4. Check if token is expired (DB-level check)
   if (tokenRecord.expiresAt < new Date()) {
     throw new AppError('Refresh token has expired.', HTTP_STATUS.UNAUTHORIZED);
   }
 
-  // 6. Check user is still active
+  // 5. Check user is still eligible to authenticate.
   const user = tokenRecord.user;
-  if (!user || !user.isActive) {
-    throw new AppError('User account is inactive.', HTTP_STATUS.FORBIDDEN);
+  if (!user || user.isBlocked) {
+    throw new AppError('User account is blocked.', HTTP_STATUS.FORBIDDEN);
   }
 
-  // 7. Issue new token pair
-  const { accessToken, refreshToken: newRefreshToken } = await createTokenPair(user);
+  // 6. Ensure the session is still active before rotating tokens.
+  const sessionActive = await hasSession(user.id, tokenRecord.id);
+  if (!sessionActive) {
+    throw new AppError('Session has been invalidated.', HTTP_STATUS.UNAUTHORIZED);
+  }
 
-  // 8. Mark old token as used, pointing to the new one
-  await tokenRepo.markAsUsed(tokenRecord.id, newRefreshToken);
+  // 7. Issue a new token pair and revoke the token it replaces.
+  const { accessToken, refreshToken: newRefreshToken } = await createTokenPair(user);
+  await deleteSession(user.id, tokenRecord.id);
+  await tokenRepo.revokeById(tokenRecord.id);
 
   logger.info(`Tokens rotated for user ${user.id}.`);
 
@@ -220,11 +231,20 @@ export async function refreshTokens(oldRefreshToken: string) {
 
 // ─── Logout (Single Session) ────────────────────────────────────────────────
 
-export async function logout(refreshToken: string) {
-  const tokenRecord = await tokenRepo.findByToken(refreshToken);
-  if (tokenRecord && !tokenRecord.isRevoked) {
-    await tokenRepo.revokeToken(refreshToken);
+export async function logout(refreshToken?: string, userId?: number) {
+  if (refreshToken) {
+    const tokenRecord = await tokenRepo.findByToken(refreshToken);
+    if (tokenRecord) {
+      await deleteSession(tokenRecord.userId, tokenRecord.id);
+      if (!tokenRecord.revoked) {
+        await tokenRepo.revokeToken(refreshToken);
+      }
+    }
+  } else if (userId) {
+    await tokenRepo.revokeAllUserTokens(userId);
+    await deleteAllSessions(userId);
   }
+
   return { message: 'Logged out successfully.' };
 }
 
@@ -232,6 +252,7 @@ export async function logout(refreshToken: string) {
 
 export async function logoutAll(userId: number) {
   await tokenRepo.revokeAllUserTokens(userId);
+  await deleteAllSessions(userId);
   logger.info(`All sessions revoked for user ${userId}.`);
   return { message: 'All sessions have been logged out.' };
 }
@@ -247,10 +268,9 @@ export async function getProfile(userId: number) {
   return {
     id: user.id,
     phone: user.phone,
-    name: user.name,
-    email: user.email,
     role: user.role,
-    isActive: user.isActive,
+    isVerified: user.isVerified,
+    isBlocked: user.isBlocked,
     createdAt: user.createdAt,
   };
 }

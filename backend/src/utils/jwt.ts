@@ -27,7 +27,7 @@ export function signAccessToken(payload: AccessTokenPayload): string {
 }
 
 /**
- * Signs a long-lived refresh token (7d by default).
+ * Signs a long-lived refresh token (30d by default).
  */
 export function signRefreshToken(payload: RefreshTokenPayload): string {
   const options: SignOptions = {

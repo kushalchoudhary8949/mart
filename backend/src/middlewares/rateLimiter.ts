@@ -5,6 +5,15 @@ import { config } from '../config';
 import { AppError } from '../utils/AppError';
 import { HTTP_STATUS } from '../utils/constants';
 
+const authRateLimitOptions = {
+  windowMs: 15 * 60 * 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req: any, _res: any, next: any) => {
+    next(new AppError('Too many requests, please try again later.', HTTP_STATUS.TOO_MANY_REQUESTS));
+  },
+};
+
 class LazyRedisStore implements Store {
   private redisStore?: RedisStore;
   private memoryStore = new MemoryStore();
@@ -78,12 +87,28 @@ class LazyRedisStore implements Store {
 // Create a rate limiter middleware backed by LazyRedisStore
 export const rateLimiter = rateLimit({
   store: new LazyRedisStore(),
-  windowMs: config.rateLimit.windowMs, // 15 minutes
-  max: config.rateLimit.max, // Limit each IP to 100 requests per `window`
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max,
+  standardHeaders: true,
+  legacyHeaders: false,
   handler: (_req, _res, next) => {
     next(new AppError('Too many requests, please try again later.', HTTP_STATUS.TOO_MANY_REQUESTS));
   },
+});
+
+export const otpRequestLimiter = rateLimit({
+  ...authRateLimitOptions,
+  store: new LazyRedisStore(),
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => `${req.ip}:otp`,
+});
+
+export const loginAttemptLimiter = rateLimit({
+  ...authRateLimitOptions,
+  store: new LazyRedisStore(),
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => `${req.ip}:login`,
 });
 

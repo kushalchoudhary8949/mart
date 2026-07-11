@@ -24,12 +24,12 @@ export async function findByToken(token: string) {
 }
 
 /**
- * Marks a refresh token as used (consumed during rotation).
+ * Revokes a refresh token by ID.
  */
-export async function markAsUsed(id: number, replacedBy: string) {
+export async function revokeById(id: number) {
   return prisma.refreshToken.update({
     where: { id },
-    data: { isUsed: true, replacedBy },
+    data: { revoked: true },
   });
 }
 
@@ -39,7 +39,7 @@ export async function markAsUsed(id: number, replacedBy: string) {
 export async function revokeToken(token: string) {
   return prisma.refreshToken.update({
     where: { token },
-    data: { isRevoked: true },
+    data: { revoked: true },
   });
 }
 
@@ -49,8 +49,8 @@ export async function revokeToken(token: string) {
  */
 export async function revokeAllUserTokens(userId: number) {
   return prisma.refreshToken.updateMany({
-    where: { userId, isRevoked: false },
-    data: { isRevoked: true },
+    where: { userId, revoked: false },
+    data: { revoked: true },
   });
 }
 
@@ -62,7 +62,7 @@ export async function deleteExpiredTokens() {
     where: {
       OR: [
         { expiresAt: { lt: new Date() } },
-        { isRevoked: true },
+        { revoked: true },
       ],
     },
   });

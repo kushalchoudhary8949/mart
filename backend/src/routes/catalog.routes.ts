@@ -17,7 +17,9 @@ router.get('/categories', getCategories);
 router.get('/categories/:slug', getCategoryDetail);
 router.get('/banners', getBanners);
 router.get('/products', validateQuery(productQuerySchema), getProducts);
-router.get('/products/:slug', getProductDetail);
+// This specific route must be registered before the generic slug route.
+// Otherwise `/products/123/images` is interpreted as a product slug request.
 router.get('/products/:id/images', getProductImages);
+router.get('/products/:slug', getProductDetail);
 
 export default router;

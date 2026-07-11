@@ -8,41 +8,34 @@ import { HTTP_STATUS } from '../utils/constants';
 
 const OTP_KEY = (phone: string) => `otp:${phone}`;
 const ATTEMPTS_KEY = (phone: string) => `otp_attempts:${phone}`;
-const COOLDOWN_KEY = (phone: string) => `otp_cooldown:${phone}`;
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const OTP_TTL = 300; // 5 minutes
-const COOLDOWN_TTL = 60; // 1 minute between OTP requests
 const MAX_ATTEMPTS = 5;
 
 // ─── OTP Service ─────────────────────────────────────────────────────────────
 
 /**
- * Generates a 6-digit OTP and stores it in Redis with a 5-minute TTL.
- * Enforces a 60-second cooldown between requests per phone number.
+ * Generates a secure 6-digit OTP and stores it in Redis for five minutes.
+ * Any previous OTP for the phone number is removed before the new code is saved,
+ * ensuring that only one code can be active at a time.
  *
  * @returns The generated OTP code (for debug purposes in dev).
  */
 export async function createOtp(phone: string): Promise<string> {
-  // 1. Check cooldown — prevent spam
-  const cooldown = await redis.get(COOLDOWN_KEY(phone));
-  if (cooldown) {
-    throw new AppError(
-      'Please wait before requesting another OTP',
-      HTTP_STATUS.TOO_MANY_REQUESTS
-    );
-  }
-
-  // 2. Generate cryptographically secure OTP
+  // 1. Generate a cryptographically secure six-digit OTP.
   const code = generateOtp(6);
 
-  // 3. Store OTP, reset attempts, set cooldown — all in a pipeline
-  const pipeline = redis.pipeline();
-  pipeline.set(OTP_KEY(phone), code, 'EX', OTP_TTL);
-  pipeline.set(ATTEMPTS_KEY(phone), '0', 'EX', OTP_TTL);
-  pipeline.set(COOLDOWN_KEY(phone), '1', 'EX', COOLDOWN_TTL);
-  await pipeline.exec();
+  // 2. Replace any prior OTP atomically, including its verification attempts.
+  // Redis serializes MULTI/EXEC transactions, so concurrent requests still leave
+  // exactly one active code for this phone number.
+  await redis
+    .multi()
+    .del(OTP_KEY(phone), ATTEMPTS_KEY(phone))
+    .set(OTP_KEY(phone), code, 'EX', OTP_TTL)
+    .set(ATTEMPTS_KEY(phone), '0', 'EX', OTP_TTL)
+    .exec();
 
   logger.info(`OTP generated for phone: ${phone.slice(-4).padStart(10, '*')}`);
   return code;
@@ -56,39 +49,60 @@ export async function createOtp(phone: string): Promise<string> {
  * @throws AppError on failure, expiry, or too many attempts.
  */
 export async function verifyOtp(phone: string, code: string): Promise<boolean> {
-  // 1. Get stored OTP
-  const storedOtp = await redis.get(OTP_KEY(phone));
-  if (!storedOtp) {
+  const result = await redis.eval(
+    `
+      local storedOtp = redis.call('GET', KEYS[1])
+      if not storedOtp then
+        return -1
+      end
+
+      local attempts = tonumber(redis.call('GET', KEYS[2]) or '0')
+      if attempts >= tonumber(ARGV[2]) then
+        redis.call('DEL', KEYS[1], KEYS[2])
+        return -2
+      end
+
+      if storedOtp ~= ARGV[1] then
+        attempts = redis.call('INCR', KEYS[2])
+        if attempts >= tonumber(ARGV[2]) then
+          redis.call('DEL', KEYS[1], KEYS[2])
+          return -2
+        end
+        return attempts
+      end
+
+      redis.call('DEL', KEYS[1], KEYS[2])
+      return 0
+    `,
+    2,
+    OTP_KEY(phone),
+    ATTEMPTS_KEY(phone),
+    code,
+    String(MAX_ATTEMPTS)
+  ) as number;
+
+  if (result === -1) {
     throw new AppError(
       'OTP has expired or was not requested. Please request a new one.',
       HTTP_STATUS.GONE
     );
   }
 
-  // 2. Check attempt count
-  const attempts = parseInt((await redis.get(ATTEMPTS_KEY(phone))) || '0', 10);
-  if (attempts >= MAX_ATTEMPTS) {
-    // Delete OTP keys — user must request a new one
-    await deleteOtpKeys(phone);
+  if (result === -2) {
     throw new AppError(
       'Maximum OTP verification attempts exceeded. Please request a new OTP.',
       HTTP_STATUS.TOO_MANY_REQUESTS
     );
   }
 
-  // 3. Compare codes
-  if (storedOtp !== code) {
-    // Increment attempts
-    await redis.incr(ATTEMPTS_KEY(phone));
-    const remaining = MAX_ATTEMPTS - attempts - 1;
+  if (result > 0) {
+    const remaining = MAX_ATTEMPTS - result;
     throw new AppError(
       `Invalid OTP. ${remaining} attempt(s) remaining.`,
       HTTP_STATUS.UNAUTHORIZED
     );
   }
 
-  // 4. Success — clean up Redis keys
-  await deleteOtpKeys(phone);
   logger.info(`OTP verified for phone: ${phone.slice(-4).padStart(10, '*')}`);
   return true;
 }
@@ -96,6 +110,3 @@ export async function verifyOtp(phone: string, code: string): Promise<boolean> {
 /**
  * Removes all OTP-related keys for a phone number.
  */
-async function deleteOtpKeys(phone: string): Promise<void> {
-  await redis.del(OTP_KEY(phone), ATTEMPTS_KEY(phone), COOLDOWN_KEY(phone));
-}

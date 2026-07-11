@@ -5,10 +5,13 @@ import { z } from 'zod';
 export const productQuerySchema = z.object({
   q: z.string().optional(),
   category: z.string().optional(),
-  featured: z.preprocess((val) => val === '1' || val === 'true', z.boolean()).optional(),
+  featured: z
+    .enum(['1', '0', 'true', 'false'])
+    .optional()
+    .transform((value) => value === undefined ? undefined : value === '1' || value === 'true'),
   sort: z.enum(['price_asc', 'price_desc', 'rating', 'name', 'newest']).default('name'),
-  page: z.preprocess((val) => parseInt(val as string, 10) || 1, z.number().min(1)).default(1),
-  limit: z.preprocess((val) => parseInt(val as string, 10) || 20, z.number().min(1).max(50)).default(20),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
 // ─── Category Validators (Admin) ─────────────────────────────────────────────

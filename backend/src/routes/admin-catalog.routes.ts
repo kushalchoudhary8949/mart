@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../middlewares/auth';
+import { authenticate, authorize } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { Role } from '@prisma/client';
 import {
@@ -28,7 +28,7 @@ import {
 const router = Router();
 
 // Protect all admin catalog routes with Auth + Admin Role
-router.use(requireAuth, requireRole([Role.ADMIN]));
+router.use(authenticate, authorize([Role.ADMIN]));
 
 // --- Categories CRUD ---
 router.get('/categories', getCategories);

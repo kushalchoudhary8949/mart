@@ -18,22 +18,19 @@ export async function findById(id: number) {
 }
 
 /**
- * Find or create a user by phone number (used during OTP verification).
- * If the user exists, returns the existing record.
- * If not, creates a new CUSTOMER user.
+ * Creates a CUSTOMER user when the phone is new, or marks the existing user
+ * as verified after a successful OTP check.
  */
-export async function findOrCreateByPhone(
-  phone: string,
-  name?: string
-) {
-  const existing = await prisma.user.findUnique({ where: { phone } });
-  if (existing) return existing;
-
-  return prisma.user.create({
-    data: {
+export async function findOrCreateVerifiedByPhone(phone: string) {
+  return prisma.user.upsert({
+    where: { phone },
+    create: {
       phone,
-      name: name || null,
       role: Role.CUSTOMER,
+      isVerified: true,
+    },
+    update: {
+      isVerified: true,
     },
   });
 }
@@ -44,28 +41,5 @@ export async function findOrCreateByPhone(
 export async function findByPhoneAndRole(phone: string, role: Role) {
   return prisma.user.findFirst({
     where: { phone, role },
-  });
-}
-
-/**
- * Update a user's password hash.
- */
-export async function updatePasswordHash(userId: number, passwordHash: string) {
-  return prisma.user.update({
-    where: { id: userId },
-    data: { passwordHash },
-  });
-}
-
-/**
- * Update a user's profile fields.
- */
-export async function updateProfile(
-  userId: number,
-  data: { name?: string; email?: string }
-) {
-  return prisma.user.update({
-    where: { id: userId },
-    data,
   });
 }

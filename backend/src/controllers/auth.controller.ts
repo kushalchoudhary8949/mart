@@ -3,7 +3,7 @@ import { catchAsync } from '../middlewares/asyncWrapper';
 import { HTTP_STATUS } from '../utils/constants';
 import * as authService from '../services/auth.service';
 
-// ─── POST /auth/otp/request ─────────────────────────────────────────────────
+// ─── POST /auth/send-otp ────────────────────────────────────────────────────
 
 export const otpRequest = catchAsync(async (req: Request, res: Response) => {
   const { phone } = req.body;
@@ -15,11 +15,11 @@ export const otpRequest = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// ─── POST /auth/otp/verify ──────────────────────────────────────────────────
+// ─── POST /auth/verify-otp ──────────────────────────────────────────────────
 
 export const otpVerify = catchAsync(async (req: Request, res: Response) => {
-  const { phone, code, name } = req.body;
-  const result = await authService.verifyOtpAndLogin(phone, code, name);
+  const { phone, code } = req.body;
+  const result = await authService.verifyOtpAndLogin(phone, code);
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -54,8 +54,8 @@ export const refresh = catchAsync(async (req: Request, res: Response) => {
 // ─── POST /auth/logout ──────────────────────────────────────────────────────
 
 export const logout = catchAsync(async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
-  const result = await authService.logout(refreshToken);
+  const { refreshToken } = req.body ?? {};
+  const result = await authService.logout(refreshToken, req.user?.id);
 
   res.status(HTTP_STATUS.OK).json({
     success: true,

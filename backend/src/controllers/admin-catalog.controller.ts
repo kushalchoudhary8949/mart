@@ -2,6 +2,15 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../middlewares/asyncWrapper';
 import { HTTP_STATUS } from '../utils/constants';
 import * as adminService from '../services/admin-catalog.service';
+import { AppError } from '../utils/AppError';
+
+function parseResourceId(value: string, resource: string): number {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    throw new AppError(`${resource} ID must be a positive integer.`, HTTP_STATUS.BAD_REQUEST);
+  }
+  return id;
+}
 
 // ─── Admin Categories CRUD ───────────────────────────────────────────────────
 
@@ -22,7 +31,7 @@ export const createCategory = catchAsync(async (req: Request, res: Response) => 
 });
 
 export const updateCategory = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseResourceId(req.params.id, 'Category');
   const result = await adminService.updateCategory(id, req.body);
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -31,7 +40,7 @@ export const updateCategory = catchAsync(async (req: Request, res: Response) => 
 });
 
 export const deleteCategory = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseResourceId(req.params.id, 'Category');
   const result = await adminService.deleteCategory(id);
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -58,7 +67,7 @@ export const createProduct = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const updateProduct = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseResourceId(req.params.id, 'Product');
   const result = await adminService.updateProduct(id, req.body);
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -67,7 +76,7 @@ export const updateProduct = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const deleteProduct = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseResourceId(req.params.id, 'Product');
   const result = await adminService.deactivateProduct(id);
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -94,7 +103,7 @@ export const createBanner = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const updateBanner = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseResourceId(req.params.id, 'Banner');
   const result = await adminService.updateBanner(id, req.body);
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -103,7 +112,7 @@ export const updateBanner = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const deleteBanner = catchAsync(async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseResourceId(req.params.id, 'Banner');
   const result = await adminService.deleteBanner(id);
   res.status(HTTP_STATUS.OK).json({
     success: true,

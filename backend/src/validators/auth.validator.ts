@@ -22,7 +22,6 @@ export const otpVerifySchema = z.object({
     .trim()
     .length(6, 'OTP must be exactly 6 digits.')
     .regex(/^\d{6}$/, 'OTP must contain only digits.'),
-  name: z.string().trim().min(2).max(100).optional(),
 });
 
 // ─── Admin Login Schema ─────────────────────────────────────────────────────
@@ -43,5 +42,13 @@ export const refreshSchema = z.object({
 // ─── Logout Schema ──────────────────────────────────────────────────────────
 
 export const logoutSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required.'),
+  refreshToken: z.string().min(1, 'Refresh token is required.').optional(),
+});
+
+// ─── Profile Update Schema ─────────────────────────────────────────────────
+
+export const profileUpdateSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required.').optional(),
+  email: z.string().trim().email('Invalid email address.').optional().or(z.literal('')),
+  address: z.string().trim().min(1, 'Address is required.').optional(),
 });

@@ -5,14 +5,14 @@ import { AppError } from '../utils/AppError';
 import { HTTP_STATUS } from '../utils/constants';
 import { Role } from '@prisma/client';
 
-// ─── requireAuth ─────────────────────────────────────────────────────────────
+// ─── authenticate ─────────────────────────────────────────────────────────
 
 /**
  * Verifies the JWT access token from the Authorization header.
  * Loads the user from the database and attaches to `req.user`.
  * Rejects with 401 if token is missing, invalid, expired, or user is inactive.
  */
-export async function requireAuth(
+export async function authenticate(
   req: Request,
   _res: Response,
   next: NextFunction
@@ -37,9 +37,9 @@ export async function requireAuth(
     if (!user) {
       throw new AppError('User not found.', HTTP_STATUS.UNAUTHORIZED);
     }
-    if (!user.isActive) {
+    if (user.isBlocked) {
       throw new AppError(
-        'Your account has been deactivated. Contact support.',
+        'Your account has been blocked. Contact support.',
         HTTP_STATUS.FORBIDDEN
       );
     }
@@ -65,15 +65,17 @@ export async function requireAuth(
   }
 }
 
-// ─── requireRole ─────────────────────────────────────────────────────────────
+export const requireAuth = authenticate;
+
+// ─── authorize ─────────────────────────────────────────────────────────────
 
 /**
  * Middleware factory that restricts access to specific user roles.
- * Must be used AFTER requireAuth.
+ * Must be used AFTER authenticate.
  *
- * @example router.get('/admin/dashboard', requireAuth, requireRole(['ADMIN']), handler)
+ * @example router.get('/admin/dashboard', authenticate, authorize(['ADMIN']), handler)
  */
-export function requireRole(roles: Role[]) {
+export function authorize(roles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AppError('Authentication required.', HTTP_STATUS.UNAUTHORIZED));
@@ -91,3 +93,5 @@ export function requireRole(roles: Role[]) {
     next();
   };
 }
+
+export const requireRole = authorize;

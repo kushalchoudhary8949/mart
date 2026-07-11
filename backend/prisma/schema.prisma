@@ -15,11 +15,9 @@ enum Role {
 model User {
   id            Int            @id @default(autoincrement())
   phone         String         @unique
-  name          String?
-  email         String?        @unique
-  passwordHash  String?        @map("password_hash")
   role          Role           @default(CUSTOMER)
-  isActive      Boolean        @default(true) @map("is_active")
+  isVerified    Boolean        @default(false) @map("is_verified")
+  isBlocked     Boolean        @default(false) @map("is_blocked")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   refreshTokens RefreshToken[]
@@ -27,16 +25,27 @@ model User {
   @@map("users")
 }
 
+model OTP {
+  id        Int      @id @default(autoincrement())
+  phone     String
+  code      String
+  expiresAt DateTime @map("expires_at")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@map("otps")
+}
+
 model RefreshToken {
-  id         Int      @id @default(autoincrement())
-  token      String   @unique
-  userId     Int      @map("user_id")
-  expiresAt  DateTime @map("expires_at")
-  isRevoked  Boolean  @default(false) @map("is_revoked")
-  isUsed     Boolean  @default(false) @map("is_used")
-  replacedBy String?  @map("replaced_by")
-  createdAt  DateTime @default(now()) @map("created_at")
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")

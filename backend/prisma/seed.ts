@@ -60,10 +60,10 @@ async function main() {
     { id: 10, name: 'Frozen Foods', slug: 'frozen-foods', icon: 'fa-snowflake', sortOrder: 10 },
   ];
 
-  for (const cat of categoriesData) {
-    await prisma.category.create({
-      data: cat,
-    });
+  const categoryIds = new Map<number, number>();
+  for (const { id: seedId, ...category } of categoriesData) {
+    const createdCategory = await prisma.category.create({ data: category });
+    categoryIds.set(seedId, createdCategory.id);
   }
   console.log('✅ Categories seeded.');
 
@@ -137,7 +137,10 @@ async function main() {
 
   for (const prod of productsData) {
     const createdProd = await prisma.product.create({
-      data: prod,
+      data: {
+        ...prod,
+        categoryId: categoryIds.get(prod.categoryId)!,
+      },
     });
 
     // Seed some gallery images for specific products

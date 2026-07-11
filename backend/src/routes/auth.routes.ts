@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../middlewares/validate';
-import { requireAuth } from '../middlewares/auth';
+import { authenticate } from '../middlewares/auth';
+import { loginAttemptLimiter, otpRequestLimiter } from '../middlewares/rateLimiter';
 import {
   otpRequestSchema,
   otpVerifySchema,
@@ -23,11 +24,15 @@ const router = Router();
 // ─── Public Routes ───────────────────────────────────────────────────────────
 
 // Customer OTP flow
-router.post('/otp/request', validate(otpRequestSchema), otpRequest);
-router.post('/otp/verify', validate(otpVerifySchema), otpVerify);
+router.post('/send-otp', otpRequestLimiter, validate(otpRequestSchema), otpRequest);
+
+// Backwards-compatible alias for existing clients.
+router.post('/otp/request', otpRequestLimiter, validate(otpRequestSchema), otpRequest);
+router.post('/verify-otp', otpRequestLimiter, validate(otpVerifySchema), otpVerify);
+router.post('/otp/verify', otpRequestLimiter, validate(otpVerifySchema), otpVerify);
 
 // Admin credentials login
-router.post('/login', validate(loginSchema), login);
+router.post('/login', loginAttemptLimiter, validate(loginSchema), login);
 
 // Token refresh (public — uses refresh token, not access token)
 router.post('/refresh', validate(refreshSchema), refresh);
@@ -35,12 +40,12 @@ router.post('/refresh', validate(refreshSchema), refresh);
 // ─── Protected Routes ───────────────────────────────────────────────────────
 
 // Logout (single session)
-router.post('/logout', requireAuth, validate(logoutSchema), logout);
+router.post('/logout', authenticate, validate(logoutSchema), logout);
 
 // Logout all sessions
-router.post('/logout-all', requireAuth, logoutAll);
+router.post('/logout-all', authenticate, logoutAll);
 
 // Get current user profile
-router.get('/me', requireAuth, getMe);
+router.get('/me', authenticate, getMe);
 
 export default router;

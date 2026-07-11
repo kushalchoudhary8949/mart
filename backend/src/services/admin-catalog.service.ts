@@ -180,6 +180,12 @@ export async function updateProduct(
     }
   }
 
+  const nextPrice = data.price ?? product.price;
+  const nextMrp = data.mrp ?? product.mrp;
+  if (nextMrp < nextPrice) {
+    throw new AppError('MRP must be greater than or equal to selling price.', HTTP_STATUS.BAD_REQUEST);
+  }
+
   await productRepo.update(id, {
     categoryId: data.category_id,
     name: data.name,
