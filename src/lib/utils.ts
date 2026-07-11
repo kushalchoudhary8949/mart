@@ -44,3 +44,13 @@ export function addMinutesIso(minutes: number): string {
   const d = new Date(Date.now() + minutes * 60000)
   return d.toISOString().replace('T', ' ').substring(0, 19)
 }
+
+/** Validate Indian phone numbers (10 digits starting with 6-9) */
+export function isValidPhone(phone: string): boolean {
+  return /^[6-9]\d{9}$/.test(phone)
+}
+
+/** Validate general email format */
+export function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}

@@ -2,14 +2,25 @@
 // Login / Signup with OTP page
 // ============================================================
 const AuthPage = (() => {
-  function render() {
+  async function render() {
+    let storeName = 'FreshCart'
+    let storeTagline = 'Fresh groceries delivered in minutes'
+
+    try {
+      const { data } = await Api.getStoreInfo()
+      if (data?.name) storeName = data.name
+      if (data?.address) storeTagline = `${data.address}`
+    } catch (e) {
+      // keep defaults on failure
+    }
+
     document.getElementById('app').innerHTML = `
     <div class="min-h-screen flex flex-col bg-gradient-to-b from-brand-50 to-white">
       <div class="max-w-md mx-auto w-full flex-1 flex flex-col px-6 pt-10">
         <div class="text-center mb-8">
           <div class="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg shadow-brand-200">🛒</div>
-          <h1 class="text-2xl font-extrabold text-gray-800">FreshCart</h1>
-          <p class="text-gray-500 text-sm mt-1">Fresh groceries delivered in minutes</p>
+          <h1 class="text-2xl font-extrabold text-gray-800">${UI.escapeHtml(storeName)}</h1>
+          <p class="text-gray-500 text-sm mt-1">${UI.escapeHtml(storeTagline)}</p>
         </div>
 
         <div id="auth-step-phone" class="page-fade">

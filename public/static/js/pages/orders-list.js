@@ -11,26 +11,63 @@ const OrdersListPage = (() => {
     cancelled: 'bg-red-50 text-red-600'
   }
 
+  let currentPage = 1
+
   async function render() {
+    currentPage = 1
     document.getElementById('app').innerHTML = `
       ${Components.header(false, 'My Orders')}
       <main class="max-w-3xl mx-auto pb-24 px-4 pt-4 page-fade">
-        ${Store.isLoggedIn() ? `<div id="orders-list">${UI.loadingSpinner()}</div>` : Components.requireLoginPrompt('Please login to view your order history')}
+        ${Store.isLoggedIn() ? `
+          <div id="orders-list">
+            <div id="orders-items-list" class="space-y-3"></div>
+            <div id="orders-load-more" class="text-center mt-4 hidden">
+              <button class="text-brand-600 font-semibold text-sm px-6 py-2 border border-brand-200 rounded-full bg-white hover:bg-brand-50 transition-colors">Load More</button>
+            </div>
+          </div>
+        ` : Components.requireLoginPrompt('Please login to view your order history')}
       </main>
       ${Components.bottomNav('orders')}
     `
 
     if (!Store.isLoggedIn()) return
 
+    await loadOrders(true)
+
+    const loadMoreBtn = document.querySelector('#orders-load-more button')
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', async () => {
+        currentPage++
+        await loadOrders(false)
+      })
+    }
+  }
+
+  async function loadOrders(reset) {
+    const listEl = document.getElementById('orders-items-list')
+    const loadMoreDiv = document.getElementById('orders-load-more')
+    if (reset && listEl) listEl.innerHTML = UI.loadingSpinner()
+
     try {
-      const { data } = await Api.getOrders()
-      const container = document.getElementById('orders-list')
-      if (!data.orders.length) {
-        container.innerHTML = UI.emptyState('fa-receipt', 'No orders yet', 'Your placed orders will appear here.',
-          `<a href="#/" class="bg-brand-600 text-white font-semibold px-6 py-2.5 rounded-xl text-sm">Start Shopping</a>`)
-        return
+      const { data } = await Api.getOrders({ page: currentPage, limit: 10 })
+      if (reset && listEl) {
+        if (!data.orders.length) {
+          listEl.innerHTML = UI.emptyState('fa-receipt', 'No orders yet', 'Your placed orders will appear here.',
+            `<a href="#/" class="bg-brand-600 text-white font-semibold px-6 py-2.5 rounded-xl text-sm">Start Shopping</a>`)
+          if (loadMoreDiv) loadMoreDiv.classList.add('hidden')
+          return
+        }
+        listEl.innerHTML = ''
       }
-      container.innerHTML = `<div class="space-y-3">${data.orders.map((o) => orderCard(o)).join('')}</div>`
+
+      const itemsHtml = data.orders.map((o) => orderCard(o)).join('')
+      if (listEl) {
+        listEl.innerHTML = reset ? itemsHtml : listEl.innerHTML + itemsHtml
+      }
+
+      if (loadMoreDiv) {
+        loadMoreDiv.classList.toggle('hidden', currentPage >= data.pagination.total_pages)
+      }
     } catch (e) {
       UI.toast(Api.errMsg(e), 'error')
     }

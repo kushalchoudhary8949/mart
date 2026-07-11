@@ -177,5 +177,20 @@ const UI = (() => {
     `
   }
 
-  return { money, toast, escapeHtml, starRating, discountPercent, timeAgo, formatDateTime, loadingSpinner, emptyState }
+  function errorState(title, subtitle, onRetryAction) {
+    return `
+      <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
+        <div class="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-4 text-red-500">
+          <i class="fas fa-triangle-exclamation text-3xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-1">${title}</h3>
+        <p class="text-sm text-gray-500 mb-6">${subtitle}</p>
+        <button onclick="${onRetryAction}" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors shadow-md">
+          <i class="fas fa-arrows-rotate mr-1.5"></i>Retry
+        </button>
+      </div>
+    `
+  }
+
+  return { money, toast, escapeHtml, starRating, discountPercent, timeAgo, formatDateTime, loadingSpinner, emptyState, errorState }
 })()

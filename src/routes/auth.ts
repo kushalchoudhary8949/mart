@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import type { AppEnv } from '../types'
-import { generateOtp, generateToken, normalizePhone } from '../lib/utils'
+import { generateOtp, generateToken, normalizePhone, isValidPhone, isValidEmail } from '../lib/utils'
 import { requireAuth } from '../lib/auth'
+import { rateLimit } from '../lib/rateLimit'
 
 const auth = new Hono<AppEnv>()
 
@@ -14,13 +15,13 @@ const SESSION_TTL_DAYS = 30
  * Generates and "sends" an OTP (SMS gateway not configured -> OTP is returned
  * in the response as `debug_otp` for demo/testing purposes only).
  */
-auth.post('/otp/request', async (c) => {
+auth.post('/otp/request', rateLimit(5, 60000), async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const phone = normalizePhone(body.phone)
   const purpose = body.purpose === 'signup' ? 'signup' : 'login'
 
-  if (!phone) {
-    return c.json({ error: 'Please provide a valid phone number (10-15 digits).' }, 400)
+  if (!phone || !isValidPhone(phone)) {
+    return c.json({ error: 'Please provide a valid 10-digit mobile number.' }, 400)
   }
 
   const code = generateOtp(6)
@@ -42,7 +43,7 @@ auth.post('/otp/request', async (c) => {
   return c.json({
     success: true,
     message: `OTP sent to ${phone}`,
-    debug_otp: code,
+    ...(c.env.DEV_MODE === 'true' ? { debug_otp: code } : {}),
     expires_in_seconds: OTP_TTL_MINUTES * 60
   })
 })
@@ -147,6 +148,10 @@ auth.put('/profile', requireAuth, async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const name = body.name ? String(body.name).trim().substring(0, 100) : null
   const email = body.email ? String(body.email).trim().substring(0, 150) : null
+
+  if (email && !isValidEmail(email)) {
+    return c.json({ error: 'Please provide a valid email address.' }, 400)
+  }
 
   await c.env.DB.prepare(`UPDATE users SET name = COALESCE(?, name), email = COALESCE(?, email) WHERE id = ?`)
     .bind(name, email, userId)

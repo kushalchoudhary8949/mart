@@ -5,6 +5,30 @@ const CartPage = (() => {
   let cartData = { items: [], subtotal: 0 }
   let appliedCoupon = null // { code, discount }
 
+  function saveCoupon(coupon) {
+    appliedCoupon = coupon
+    if (coupon) sessionStorage.setItem('fc_cart_coupon', JSON.stringify(coupon))
+    else sessionStorage.removeItem('fc_cart_coupon')
+    persistCheckoutSummary()
+  }
+
+  function persistCheckoutSummary() {
+    const discount = appliedCoupon ? appliedCoupon.discount : 0
+    const deliveryFee = (cartData.subtotal - discount) >= 499 ? 0 : 25
+    const total = Math.max(0, cartData.subtotal - discount) + deliveryFee
+    sessionStorage.setItem('fc_checkout_summary', JSON.stringify({
+      subtotal: cartData.subtotal,
+      discount,
+      deliveryFee,
+      total,
+      coupon: appliedCoupon ? appliedCoupon.code : null
+    }))
+  }
+
+  function restoreCoupon() {
+    try { appliedCoupon = JSON.parse(sessionStorage.getItem('fc_cart_coupon') || 'null') } catch (e) { appliedCoupon = null }
+  }
+
   async function render() {
     document.getElementById('app').innerHTML = `
       ${Components.header(true, 'My Cart')}
@@ -30,6 +54,7 @@ const CartPage = (() => {
   }
 
   async function loadCart() {
+    restoreCoupon()
     try {
       const { data } = await Api.getCart()
       cartData = data
@@ -105,16 +130,13 @@ const CartPage = (() => {
     const couponInput = document.getElementById('coupon-input')
     if (couponInput) couponInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyCoupon() })
     const removeCouponBtn = document.getElementById('remove-coupon-btn')
-    if (removeCouponBtn) removeCouponBtn.addEventListener('click', () => { appliedCoupon = null; renderCartBody() })
+    if (removeCouponBtn) removeCouponBtn.addEventListener('click', () => { saveCoupon(null); renderCartBody() })
     const viewCouponsBtn = document.getElementById('view-coupons-btn')
     if (viewCouponsBtn) viewCouponsBtn.addEventListener('click', showCouponsModal)
 
     checkoutBar.classList.remove('hidden')
     document.getElementById('checkout-total').textContent = UI.money(total)
-
-    sessionStorage.setItem('fc_checkout_summary', JSON.stringify({
-      subtotal: cartData.subtotal, discount, deliveryFee, total, coupon: appliedCoupon ? appliedCoupon.code : null
-    }))
+    persistCheckoutSummary()
   }
 
   function cartItemRow(it) {
@@ -153,7 +175,7 @@ const CartPage = (() => {
       const { data } = await Api.updateCartItem(productId, newQty)
       cartData = data
       Store.setCart(data.items, data.subtotal)
-      appliedCoupon = null // re-validate coupon on subtotal change
+      saveCoupon(null) // re-validate coupon on subtotal change
       renderCartBody()
     } catch (e) {
       UI.toast(Api.errMsg(e), 'error')
@@ -165,7 +187,7 @@ const CartPage = (() => {
       const { data } = await Api.removeCartItem(productId)
       cartData = data
       Store.setCart(data.items, data.subtotal)
-      appliedCoupon = null
+      saveCoupon(null)
       renderCartBody()
       UI.toast('Item removed from cart', 'info')
     } catch (e) {
@@ -180,7 +202,7 @@ const CartPage = (() => {
     try {
       const { data } = await Api.validateCoupon(code, cartData.subtotal)
       if (data.valid) {
-        appliedCoupon = { code: data.code, discount: data.discount }
+        saveCoupon({ code: data.code, discount: data.discount })
         UI.toast(`Coupon applied! You saved ${UI.money(data.discount)}`, 'success')
       } else {
         UI.toast(data.error || 'Invalid coupon', 'error')

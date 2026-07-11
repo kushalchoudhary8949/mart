@@ -3,6 +3,7 @@ import type { AppEnv } from '../types'
 import { requireAuth } from '../lib/auth'
 import { generateOrderNo } from '../lib/utils'
 import { computeCurrentStatus, STATUS_LABELS, STATUS_MESSAGES, ORDER_STATUSES, statusIndex } from '../lib/orderStatus'
+import { rateLimit } from '../lib/rateLimit'
 
 const orders = new Hono<AppEnv>()
 orders.use('*', requireAuth)
@@ -15,7 +16,7 @@ const FREE_DELIVERY_THRESHOLD = 499
  * body: { address_id?, address_text, coupon_code?, payment_method }
  * Creates an order from the user's current cart, applies coupon, clears cart.
  */
-orders.post('/checkout', async (c) => {
+orders.post('/checkout', rateLimit(5, 300000), async (c) => {
   const userId = c.get('userId')
   const body = await c.req.json().catch(() => ({}))
   const addressText = String(body.address_text || '').trim()
@@ -119,11 +120,21 @@ orders.post('/checkout', async (c) => {
 /** GET /api/orders - order history for current user */
 orders.get('/', async (c) => {
   const userId = c.get('userId')
-  const { results } = await c.env.DB.prepare(
-    `SELECT o.*, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
-     FROM orders o WHERE o.user_id = ? ORDER BY o.placed_at DESC`
+  const page = Math.max(1, parseInt(c.req.query('page') || '1', 10))
+  const limit = Math.min(50, Math.max(1, parseInt(c.req.query('limit') || '10', 10)))
+  const offset = (page - 1) * limit
+
+  const countRow = await c.env.DB.prepare(
+    `SELECT COUNT(*) as total FROM orders WHERE user_id = ?`
   )
     .bind(userId)
+    .first<{ total: number }>()
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT o.*, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
+     FROM orders o WHERE o.user_id = ? ORDER BY o.placed_at DESC LIMIT ? OFFSET ?`
+  )
+    .bind(userId, limit, offset)
     .all()
 
   const ordersWithStatus = (results as any[]).map((o) => {
@@ -135,7 +146,15 @@ orders.get('/', async (c) => {
     }
   })
 
-  return c.json({ orders: ordersWithStatus })
+  return c.json({
+    orders: ordersWithStatus,
+    pagination: {
+      page,
+      limit,
+      total: countRow?.total || 0,
+      total_pages: Math.ceil((countRow?.total || 0) / limit)
+    }
+  })
 })
 
 /** GET /api/orders/:id - order detail with items */
@@ -228,6 +247,10 @@ orders.post('/:id/cancel', async (c) => {
     return c.json({ error: 'Order is already cancelled' }, 400)
   }
 
+  if (order.coupon_code) {
+    await c.env.DB.prepare(`UPDATE coupons SET used_count = MAX(0, used_count - 1) WHERE code = ?`).bind(order.coupon_code).run()
+  }
+
   await c.env.DB.prepare(`UPDATE orders SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?`).bind(orderId).run()
   await c.env.DB.prepare(`INSERT INTO order_status_history (order_id, status, note) VALUES (?, 'cancelled', 'Order cancelled by customer')`)
     .bind(orderId)
@@ -268,6 +291,36 @@ orders.post('/:id/reorder', async (c) => {
   }
 
   return c.json({ success: true, message: 'Items added to cart' })
+})
+
+/** POST /api/orders/:id/rate - submit order rating */
+orders.post('/:id/rate', async (c) => {
+  const userId = c.get('userId')
+  const orderId = parseInt(c.req.param('id'), 10)
+  const body = await c.req.json().catch(() => ({}))
+  const rating = parseInt(body.rating, 10)
+  const comment = body.comment ? String(body.comment).trim().substring(0, 500) : null
+
+  if (isNaN(rating) || rating < 1 || rating > 5) {
+    return c.json({ error: 'Rating must be an integer between 1 and 5' }, 400)
+  }
+
+  const order = await c.env.DB.prepare(`SELECT status, placed_at, eta_minutes FROM orders WHERE id = ? AND user_id = ?`)
+    .bind(orderId, userId)
+    .first<any>()
+
+  if (!order) return c.json({ error: 'Order not found' }, 404)
+
+  const computed = computeCurrentStatus(order.placed_at, order.eta_minutes, order.status === 'cancelled')
+  if (computed.status !== 'delivered') {
+    return c.json({ error: 'You can only rate delivered orders' }, 400)
+  }
+
+  await c.env.DB.prepare(`UPDATE orders SET rating = ?, rating_comment = ? WHERE id = ?`)
+    .bind(rating, comment, orderId)
+    .run()
+
+  return c.json({ success: true, message: 'Rating submitted successfully' })
 })
 
 export default orders

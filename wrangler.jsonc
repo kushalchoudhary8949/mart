@@ -12,5 +12,8 @@
       "database_name": "webapp-production",
       "database_id": "local-placeholder-will-be-replaced-on-deploy"
     }
-  ]
+  ],
+  "vars": {
+    "DEV_MODE": "true"
+  }
 }

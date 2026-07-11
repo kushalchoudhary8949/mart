@@ -11,6 +11,7 @@ import couponRoutes from './routes/coupons'
 import orderRoutes from './routes/orders'
 import notificationRoutes from './routes/notifications'
 import addressRoutes from './routes/addresses'
+import adminRoutes from './routes/admin'
 
 const app = new Hono<AppEnv>()
 
@@ -28,8 +29,17 @@ app.route('/api/coupons', couponRoutes)
 app.route('/api/orders', orderRoutes)
 app.route('/api/notifications', notificationRoutes)
 app.route('/api/addresses', addressRoutes)
+app.route('/api/admin', adminRoutes)
 
 app.get('/api/health', (c) => c.json({ status: 'ok', time: new Date().toISOString() }))
+app.get('/api/store/info', (c) => c.json({
+  name: 'FreshCart Mart',
+  logo: '🛒',
+  address: '123 Mart Street, Grocery City',
+  timings: '6:00 AM - 11:00 PM',
+  delivery_fee: 25,
+  free_delivery_threshold: 499
+}))
 
 // --- SPA shell ---
 const HTML_SHELL = `<!DOCTYPE html>

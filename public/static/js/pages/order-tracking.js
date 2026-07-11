@@ -24,6 +24,9 @@ const OrderTrackingPage = (() => {
   let pollInterval = null
 
   async function render(params) {
+    let isTerminal = false
+    let activeRequest = 0
+
     document.getElementById('app').innerHTML = `
       ${Components.header(true, 'Order Tracking')}
       <main class="max-w-2xl mx-auto pb-24 px-4 pt-4 page-fade" id="track-container">
@@ -33,19 +36,43 @@ const OrderTrackingPage = (() => {
     `
 
     async function load() {
+      const requestId = ++activeRequest
       try {
         const [orderRes, trackRes] = await Promise.all([Api.getOrder(params.id), Api.trackOrder(params.id)])
+        if (requestId !== activeRequest) return
         renderTracking(orderRes.data, trackRes.data, params.id)
+        if (['delivered', 'cancelled'].includes(trackRes.data.status)) {
+          isTerminal = true
+          if (pollInterval) {
+            clearInterval(pollInterval)
+            pollInterval = null
+          }
+        }
       } catch (e) {
-        document.getElementById('track-container').innerHTML = UI.emptyState('fa-triangle-exclamation', 'Order not found', Api.errMsg(e))
-        clearInterval(pollInterval)
+        if (requestId !== activeRequest) return
+        isTerminal = true
+        document.getElementById('track-container').innerHTML = UI.errorState(
+          'Order not found', Api.errMsg(e), `Router.resolve()`
+        )
+        if (pollInterval) {
+          clearInterval(pollInterval)
+          pollInterval = null
+        }
       }
     }
 
     await load()
-    pollInterval = setInterval(load, 8000) // poll every 8s to simulate live updates
+    if (!isTerminal) {
+      pollInterval = setInterval(load, 8000)
+    }
 
-    return () => clearInterval(pollInterval)
+    return () => {
+      activeRequest += 1
+      if (pollInterval) {
+        clearInterval(pollInterval)
+        pollInterval = null
+      }
+    }
   }
 
   function renderTracking(orderData, trackData, orderId) {

@@ -24,6 +24,11 @@ const Api = (() => {
       if (err.response && err.response.status === 401) {
         setToken(null)
         localStorage.removeItem('fc_user')
+        // Redirect to login — avoid redirect loop if already on login page
+        if (window.location.hash !== '#/login') {
+          sessionStorage.setItem('fc_redirect_after_login', window.location.hash.slice(1) || '/')
+          window.location.hash = '/login'
+        }
       }
       return Promise.reject(err)
     }
@@ -44,10 +49,13 @@ const Api = (() => {
     logout: () => client.post('/auth/logout'),
     updateProfile: (data) => client.put('/auth/profile', data),
     // catalog
+    getStoreInfo: () => client.get('/store/info'),
+    getBanners: () => client.get('/banners'),
     getCategories: () => client.get('/categories'),
     getCategory: (slug) => client.get(`/categories/${slug}`),
     getProducts: (params) => client.get('/products', { params }),
     getProduct: (slug) => client.get(`/products/${slug}`),
+    getProductImages: (productId) => client.get(`/products/${productId}/images`),
     // cart
     getCart: () => client.get('/cart'),
     addToCart: (productId, quantity = 1) => client.post('/cart', { product_id: productId, quantity }),
@@ -63,11 +71,12 @@ const Api = (() => {
     validateCoupon: (code, subtotal) => client.post('/coupons/validate', { code, subtotal }),
     // orders
     checkout: (payload) => client.post('/orders/checkout', payload),
-    getOrders: () => client.get('/orders'),
+    getOrders: (params) => client.get('/orders', { params }),
     getOrder: (id) => client.get(`/orders/${id}`),
     trackOrder: (id) => client.get(`/orders/${id}/track`),
     cancelOrder: (id) => client.post(`/orders/${id}/cancel`),
     reorder: (id) => client.post(`/orders/${id}/reorder`),
+    rateOrder: (id, rating, comment) => client.post(`/orders/${id}/rate`, { rating, comment }),
     // notifications
     getNotifications: () => client.get('/notifications'),
     markNotificationRead: (id) => client.post(`/notifications/${id}/read`),
@@ -75,6 +84,7 @@ const Api = (() => {
     // addresses
     getAddresses: () => client.get('/addresses'),
     addAddress: (data) => client.post('/addresses', data),
+    updateAddress: (id, data) => client.put(`/addresses/${id}`, data),
     deleteAddress: (id) => client.delete(`/addresses/${id}`)
   }
 })()

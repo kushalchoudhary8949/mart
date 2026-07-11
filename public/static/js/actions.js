@@ -25,6 +25,21 @@ const Actions = (() => {
     }
   }
 
+  function bindProductCardActions(container) {
+    container.querySelectorAll('[data-action="add-to-cart"]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        await addToCart(parseInt(btn.dataset.id, 10))
+      })
+    })
+    container.querySelectorAll('[data-action="toggle-wishlist"]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        await toggleWishlist(parseInt(btn.dataset.id, 10), btn)
+      })
+    })
+  }
+
   async function toggleWishlist(productId, btnEl) {
     if (!Store.isLoggedIn()) {
       UI.toast('Please login to use wishlist', 'error')
@@ -55,5 +70,5 @@ const Actions = (() => {
     }
   }
 
-  return { addToCart, toggleWishlist }
+  return { addToCart, toggleWishlist, bindProductCardActions }
 })()

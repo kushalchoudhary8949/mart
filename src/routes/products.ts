@@ -11,12 +11,43 @@ products.get('/categories', async (c) => {
   return c.json({ categories: results })
 })
 
+/** GET /api/products/:id/images - product image gallery */
+products.get('/products/:id/images', async (c) => {
+  const id = parseInt(c.req.param('id'), 10)
+  if (Number.isNaN(id)) {
+    return c.json({ error: 'Invalid product id' }, 400)
+  }
+
+  const product = await c.env.DB.prepare(`SELECT id, image FROM products WHERE id = ? AND is_active = 1`).bind(id).first<{ id: number; image: string | null }>()
+  if (!product) return c.json({ error: 'Product not found' }, 404)
+
+  const { results: galleryImages } = await c.env.DB.prepare(
+    `SELECT url FROM product_images WHERE product_id = ? ORDER BY sort_order ASC`
+  )
+    .bind(id)
+    .all()
+
+  const images = galleryImages.length > 0
+    ? galleryImages.map((img: any) => img.url)
+    : product.image ? [product.image] : []
+
+  return c.json({ images })
+})
+
 /** GET /api/categories/:slug - category detail */
 products.get('/categories/:slug', async (c) => {
   const slug = c.req.param('slug')
   const category = await c.env.DB.prepare(`SELECT * FROM categories WHERE slug = ?`).bind(slug).first()
   if (!category) return c.json({ error: 'Category not found' }, 404)
   return c.json({ category })
+})
+
+/** GET /api/banners - list active banners */
+products.get('/banners', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM banners WHERE active = 1 AND (expires_at IS NULL OR datetime(expires_at) >= datetime('now')) ORDER BY sort_order ASC`
+  ).all()
+  return c.json({ banners: results })
 })
 
 /**
@@ -33,7 +64,7 @@ products.get('/products', async (c) => {
   const limit = Math.min(50, Math.max(1, parseInt(c.req.query('limit') || '20', 10)))
   const offset = (page - 1) * limit
 
-  const conditions: string[] = []
+  const conditions: string[] = ['p.is_active = 1']
   const params: any[] = []
 
   if (categorySlug) {
@@ -94,22 +125,39 @@ products.get('/products/:slug', async (c) => {
   const product = await c.env.DB.prepare(
     `SELECT p.*, c.name as category_name, c.slug as category_slug
      FROM products p JOIN categories c ON c.id = p.category_id
-     WHERE p.slug = ?`
+     WHERE p.slug = ? AND p.is_active = 1`
   )
     .bind(slug)
     .first()
 
   if (!product) return c.json({ error: 'Product not found' }, 404)
 
+  // Fetch product gallery images
+  const { results: galleryImages } = await c.env.DB.prepare(
+    `SELECT url FROM product_images WHERE product_id = ? ORDER BY sort_order ASC`
+  )
+    .bind((product as any).id)
+    .all()
+
+  const images = galleryImages.length > 0
+    ? galleryImages.map((img: any) => img.url)
+    : [(product as any).image]
+
   // Related products from same category
   const { results: related } = await c.env.DB.prepare(
     `SELECT id, name, slug, price, mrp, unit, image, rating FROM products
-     WHERE category_id = ? AND id != ? LIMIT 8`
+     WHERE category_id = ? AND id != ? AND is_active = 1 LIMIT 8`
   )
     .bind((product as any).category_id, (product as any).id)
     .all()
 
-  return c.json({ product, related })
+  return c.json({
+    product: {
+      ...product,
+      images
+    },
+    related
+  })
 })
 
 export default products
