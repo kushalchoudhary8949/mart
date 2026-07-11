@@ -1,0 +1,51 @@
+import { Router } from 'express';
+import { requireAuth, requireRole } from '../middlewares/auth';
+import { validate } from '../middlewares/validate';
+import { Role } from '@prisma/client';
+import {
+  createCategorySchema,
+  updateCategorySchema,
+  createProductSchema,
+  updateProductSchema,
+  createBannerSchema,
+  updateBannerSchema,
+} from '../validators/catalog.validator';
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getBanners,
+  createBanner,
+  updateBanner,
+  deleteBanner,
+} from '../controllers/admin-catalog.controller';
+
+const router = Router();
+
+// Protect all admin catalog routes with Auth + Admin Role
+router.use(requireAuth, requireRole([Role.ADMIN]));
+
+// --- Categories CRUD ---
+router.get('/categories', getCategories);
+router.post('/categories', validate(createCategorySchema), createCategory);
+router.put('/categories/:id', validate(updateCategorySchema), updateCategory);
+router.delete('/categories/:id', deleteCategory);
+
+// --- Products CRUD ---
+router.get('/products', getProducts);
+router.post('/products', validate(createProductSchema), createProduct);
+router.put('/products/:id', validate(updateProductSchema), updateProduct);
+router.delete('/products/:id', deleteProduct);
+
+// --- Banners CRUD ---
+router.get('/banners', getBanners);
+router.post('/banners', validate(createBannerSchema), createBanner);
+router.put('/banners/:id', validate(updateBannerSchema), updateBanner);
+router.delete('/banners/:id', deleteBanner);
+
+export default router;
