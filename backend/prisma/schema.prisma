@@ -10,17 +10,18 @@ generator client {
 enum Role {
   CUSTOMER
   ADMIN
+  DELIVERY_PARTNER
 }
 
 enum OrderStatus {
-  PLACED
-  CONFIRMED
-  PREPARING
-  PACKED
-  READY
+  PENDING
+  ACCEPTED
+  PACKING
+  READY_FOR_PICKUP
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  FAILED
   RETURNED
 }
 
@@ -57,6 +58,7 @@ model User {
   cart                 CartItem[]
   notifications        Notification[]
   inventoryAdjustments InventoryHistory[] @relation("AdminAdjustments")
+  deliveryPartner      DeliveryPartner?
 
   @@map("users")
 }
@@ -216,7 +218,7 @@ model Order {
   id              Int                  @id @default(autoincrement())
   orderNo         String               @unique @map("order_no")
   userId          Int                  @map("user_id")
-  status          OrderStatus          @default(PLACED)
+  status          OrderStatus          @default(PENDING)
   subtotal        Float
   discount        Float                @default(0)
   deliveryFee     Float                @default(0) @map("delivery_fee")
@@ -225,17 +227,49 @@ model Order {
   paymentMethod   String               @default("COD") @map("payment_method")
   paymentStatus   PaymentStatus        @default(PENDING) @map("payment_status")
   addressText     String               @map("address_text")
-  deliveryPartner String?              @map("delivery_partner")
+  deliveryPartnerId Int?               @map("delivery_partner_id")
   etaMinutes      Int                  @default(30) @map("eta_minutes")
   placedAt        DateTime             @default(now()) @map("placed_at")
+  acceptedAt      DateTime?            @map("accepted_at")
+  packedAt        DateTime?            @map("packed_at")
+  readyForPickupAt DateTime?           @map("ready_for_pickup_at")
+  pickedUpAt      DateTime?            @map("picked_up_at")
+  outForDeliveryAt DateTime?           @map("out_for_delivery_at")
+  deliveredAt     DateTime?            @map("delivered_at")
+  cancelledAt     DateTime?            @map("cancelled_at")
   updatedAt       DateTime             @updatedAt @map("updated_at")
 
   user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
   items   OrderItem[]
   history OrderStatusHistory[]
 
   @@index([userId])
+  @@index([deliveryPartnerId, status])
+  @@index([status])
   @@map("orders")
+}
+
+model DeliveryPartner {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @unique @map("user_id")
+  phone            String    @unique
+  name             String
+  vehicleType      String    @map("vehicle_type")
+  vehicleNumber    String    @map("vehicle_number")
+  profileImage     String?   @map("profile_image")
+  rating           Float     @default(5)
+  isOnline         Boolean   @default(false) @map("is_online")
+  isAvailable      Boolean   @default(true) @map("is_available")
+  currentLatitude  Float?    @map("current_latitude")
+  currentLongitude Float?    @map("current_longitude")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders           Order[]
+
+  @@index([isOnline, isAvailable])
+  @@map("delivery_partners")
 }
 
 model OrderItem {

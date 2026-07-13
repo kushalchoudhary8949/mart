@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   BarChart3,
   Users,
+  Bike,
   Leaf,
 } from "lucide-react";
 
@@ -34,6 +35,7 @@ const items = [
   { title: "Offers", url: "/offers", icon: BadgePercent },
   { title: "Sales Reports", url: "/reports", icon: BarChart3 },
   { title: "Customers", url: "/customers", icon: Users },
+  { title: "Delivery Partners", url: "/delivery-partners", icon: Bike },
 ];
 
 export function AppSidebar() {

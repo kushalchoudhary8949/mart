@@ -10,6 +10,7 @@ import * as tokenRepo from '../src/repositories/token.repository';
 import { config } from '../src/config';
 import { signAccessToken, signRefreshToken } from '../src/utils/jwt';
 import { AppError } from '../src/utils/AppError';
+import * as passwordUtils from '../src/utils/password';
 
 jest.mock('../src/services/otp.service', () => ({
   createOtp: jest.fn(),
@@ -18,6 +19,7 @@ jest.mock('../src/services/otp.service', () => ({
 
 jest.mock('../src/repositories/user.repository', () => ({
   findById: jest.fn(),
+  findByPhone: jest.fn(),
   findOrCreateVerifiedByPhone: jest.fn(),
 }));
 
@@ -92,8 +94,23 @@ describe('Authentication flows', () => {
     await expect(authService.verifyOtpAndLogin('123', '123456')).rejects.toBeInstanceOf(AppError);
   });
 
-  it('rejects password-based login as not configured', async () => {
+  it('rejects invalid credential logins', async () => {
+    mockedUserRepo.findByPhone.mockResolvedValue(null);
     await expect(authService.loginWithCredentials('9876543210', 'password123')).rejects.toBeInstanceOf(AppError);
+  });
+
+  it('issues tokens for a valid credential login', async () => {
+    mockedUserRepo.findByPhone.mockResolvedValue({
+      id: 21, phone: '9876543210', role: Role.DELIVERY_PARTNER, passwordHash: 'hash',
+      isVerified: true, isBlocked: false, isActive: true,
+    } as any);
+    mockedTokenRepo.createRefreshToken.mockResolvedValue({ id: 8, token: 'temp' } as any);
+    jest.spyOn(passwordUtils, 'comparePassword').mockResolvedValue(true);
+
+    const result = await authService.loginWithCredentials('9876543210', 'password123');
+
+    expect(result.user.role).toBe(Role.DELIVERY_PARTNER);
+    expect(result.accessToken).toBeDefined();
   });
 
   it('verifies OTP and issues a token pair', async () => {

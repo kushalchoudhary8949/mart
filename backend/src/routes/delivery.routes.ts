@@ -1,0 +1,22 @@
+import { Router } from 'express';
+import { Role } from '@prisma/client';
+import { authenticate, authorize } from '../middlewares/auth';
+import { validate, validateParams } from '../middlewares/validate';
+import { loginAttemptLimiter } from '../middlewares/rateLimiter';
+import * as controller from '../controllers/delivery.controller';
+import { deliveryLoginSchema, idParamsSchema, locationSchema, profileSchema } from '../validators/delivery.validator';
+
+const router = Router();
+router.post('/login', loginAttemptLimiter, validate(deliveryLoginSchema), controller.login);
+router.use(authenticate, authorize([Role.DELIVERY_PARTNER]));
+router.get('/profile', controller.profile);
+router.put('/profile', validate(profileSchema), controller.updateProfile);
+router.get('/orders/available', controller.available);
+router.get('/orders/my', controller.mine);
+router.post('/orders/:id/accept', validateParams(idParamsSchema), controller.accept);
+router.post('/orders/:id/reject', validateParams(idParamsSchema), controller.reject);
+router.patch('/orders/:id/picked-up', validateParams(idParamsSchema), controller.pickedUp);
+router.patch('/orders/:id/start', validateParams(idParamsSchema), controller.start);
+router.patch('/orders/:id/delivered', validateParams(idParamsSchema), controller.delivered);
+router.patch('/orders/:id/location', validateParams(idParamsSchema), validate(locationSchema), controller.location);
+export default router;

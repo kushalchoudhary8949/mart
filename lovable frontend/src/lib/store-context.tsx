@@ -31,7 +31,7 @@ export interface Offer {
   active: boolean;
 }
 
-export type OrderStatus = "pending" | "packed" | "out_for_delivery" | "delivered" | "cancelled";
+export type OrderStatus = "pending" | "accepted" | "packing" | "ready_for_pickup" | "out_for_delivery" | "delivered" | "cancelled";
 
 export interface Order {
   id: string;
@@ -86,7 +86,7 @@ const initialOffers: Offer[] = [
 
 const initialOrders: Order[] = [
   { id: "ORD-1042", customerName: "Priya Sharma", items: 8, total: 742, status: "pending", payment: "UPI", date: "2026-07-12" },
-  { id: "ORD-1041", customerName: "Rahul Verma", items: 3, total: 215, status: "packed", payment: "COD", date: "2026-07-12" },
+  { id: "ORD-1041", customerName: "Rahul Verma", items: 3, total: 215, status: "ready_for_pickup", payment: "COD", date: "2026-07-12" },
   { id: "ORD-1040", customerName: "Anita Desai", items: 12, total: 1380, status: "out_for_delivery", payment: "Card", date: "2026-07-12" },
   { id: "ORD-1039", customerName: "Vikram Singh", items: 5, total: 460, status: "delivered", payment: "UPI", date: "2026-07-11" },
   { id: "ORD-1038", customerName: "Meera Nair", items: 7, total: 890, status: "delivered", payment: "UPI", date: "2026-07-11" },

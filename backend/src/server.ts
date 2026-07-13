@@ -4,8 +4,10 @@ import { config } from './config';
 import { logger } from './config/logger';
 import { prisma, testDbConnection } from './config/database';
 import { redis } from './config/redis';
+import { initializeSocket } from './socket';
 
 const server = http.createServer(app);
+initializeSocket(server);
 
 async function startServer() {
   logger.info('Starting Vrindawan Mart Backend Service...');

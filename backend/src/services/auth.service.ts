@@ -9,6 +9,7 @@ import { redis } from '../config/redis';
 import * as otpService from './otp.service';
 import * as userRepo from '../repositories/user.repository';
 import * as tokenRepo from '../repositories/token.repository';
+import { comparePassword } from '../utils/password';
 
 // ─── Helper: Parse duration strings like "7d" or "15m" to milliseconds ──────
 
@@ -165,12 +166,15 @@ export async function verifyOtpAndLogin(phone: string, code: string) {
 // ─── Admin Login (Credentials) ──────────────────────────────────────────────
 
 export async function loginWithCredentials(phone: string, password: string) {
-  void phone;
-  void password;
-  throw new AppError(
-    'Password-based login is not configured. Verify an OTP instead.',
-    HTTP_STATUS.BAD_REQUEST
-  );
+  const normalized = normalizePhone(phone);
+  if (!normalized) throw new AppError('Invalid phone number.', HTTP_STATUS.BAD_REQUEST);
+  const user = await userRepo.findByPhone(normalized);
+  if (!user || !user.passwordHash || !(await comparePassword(password, user.passwordHash))) {
+    throw new AppError('Invalid phone number or password.', HTTP_STATUS.UNAUTHORIZED);
+  }
+  if (user.isBlocked || !user.isActive) throw new AppError('This account is inactive.', HTTP_STATUS.FORBIDDEN);
+  const tokens = await createTokenPair(user);
+  return { ...tokens, user: { id: user.id, phone: user.phone, role: user.role, isVerified: user.isVerified } };
 }
 
 // ─── Refresh Token Rotation ─────────────────────────────────────────────────

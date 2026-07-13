@@ -26,7 +26,9 @@ export const Route = createFileRoute("/")({
 
 const statusLabel: Record<OrderStatus, string> = {
   pending: "Pending",
-  packed: "Packed",
+  accepted: "Accepted",
+  packing: "Packing",
+  ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
   cancelled: "Cancelled",
@@ -34,7 +36,9 @@ const statusLabel: Record<OrderStatus, string> = {
 
 const statusVariant: Record<OrderStatus, string> = {
   pending: "bg-warning/20 text-warning-foreground",
-  packed: "bg-accent text-accent-foreground",
+  accepted: "bg-blue-100 text-blue-700",
+  packing: "bg-accent text-accent-foreground",
+  ready_for_pickup: "bg-violet-100 text-violet-700",
   out_for_delivery: "bg-chart-3/20 text-foreground",
   delivered: "bg-success/15 text-success",
   cancelled: "bg-destructive/10 text-destructive",
@@ -48,7 +52,7 @@ function Dashboard() {
     .filter((o) => o.status !== "cancelled")
     .reduce((s, o) => s + o.total, 0);
   const lowStock = products.filter((p) => p.stock <= p.lowStockThreshold);
-  const pendingCount = orders.filter((o) => o.status === "pending" || o.status === "packed").length;
+  const pendingCount = orders.filter((o) => ["pending", "accepted", "packing", "ready_for_pickup"].includes(o.status)).length;
 
   return (
     <div className="space-y-6">

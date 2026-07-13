@@ -1,0 +1,19 @@
+import { Router } from 'express';
+import { Role } from '@prisma/client';
+import { authenticate, authorize } from '../middlewares/auth';
+import { validate, validateParams, validateQuery } from '../middlewares/validate';
+import * as controller from '../controllers/admin-delivery.controller';
+import { adminOrdersQuerySchema, assignSchema, idParamsSchema, partnerSchema, partnerUpdateSchema, statusSchema } from '../validators/delivery.validator';
+
+const router = Router();
+router.use(authenticate, authorize([Role.ADMIN]));
+router.get('/orders', validateQuery(adminOrdersQuerySchema), controller.orders);
+router.patch('/orders/:id/status', validateParams(idParamsSchema), validate(statusSchema), controller.setStatus);
+router.post('/orders/:id/assign', validateParams(idParamsSchema), validate(assignSchema), controller.assign);
+router.get('/orders/:id/location', validateParams(idParamsSchema), controller.location);
+router.get('/delivery-partners', controller.partners);
+router.post('/delivery-partners', validate(partnerSchema), controller.createPartner);
+router.patch('/delivery-partners/:id', validateParams(idParamsSchema), validate(partnerUpdateSchema), controller.updatePartner);
+router.delete('/delivery-partners/:id', validateParams(idParamsSchema), controller.removePartner);
+router.get('/delivery-reports', controller.reports);
+export default router;

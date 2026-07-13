@@ -38,6 +38,37 @@ async function main() {
     console.log('ℹ️ Admin user already exists. Skipping user creation.');
   }
 
+  // Seed a Delivery Partner for the delivery panel
+  const DELIVERY_PHONE = '9000000001';
+  const DELIVERY_PASSWORD = 'Delivery@1234';
+  const existingDelivery = await prisma.user.findUnique({ where: { phone: DELIVERY_PHONE } });
+  if (!existingDelivery) {
+    const deliveryHash = await bcrypt.hash(DELIVERY_PASSWORD, 12);
+    const user = await prisma.user.create({
+      data: {
+        phone: DELIVERY_PHONE,
+        name: 'Delivery Partner',
+        passwordHash: deliveryHash,
+        role: Role.DELIVERY_PARTNER,
+        isActive: true,
+      },
+    });
+    await prisma.deliveryPartner.create({
+      data: {
+        userId: user.id,
+        phone: DELIVERY_PHONE,
+        name: 'Delivery Partner',
+        vehicleType: 'Bike',
+        vehicleNumber: 'DL-01-0001',
+        isOnline: false,
+        isAvailable: true,
+      },
+    });
+    console.log('✅ Delivery partner seeded.');
+  } else {
+    console.log('ℹ️ Delivery partner already exists. Skipping creation.');
+  }
+
   // 2. Clean existing catalog data
   console.log('🧹 Cleaning existing catalog data...');
   await prisma.productImage.deleteMany();
@@ -136,11 +167,12 @@ async function main() {
   ];
 
   for (const prod of productsData) {
+    const { image, categoryId: seedCatId, ...prodPayload } = prod as any;
     const createdProd = await prisma.product.create({
       data: {
-        ...prod,
-        categoryId: categoryIds.get(prod.categoryId)!,
-        thumbnail: prod.image,
+        ...prodPayload,
+        categoryId: categoryIds.get(seedCatId)!,
+        thumbnail: image,
       },
     });
 

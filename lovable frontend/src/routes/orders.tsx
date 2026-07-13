@@ -35,7 +35,9 @@ export const Route = createFileRoute("/orders")({
 
 const statusLabel: Record<OrderStatus, string> = {
   pending: "Pending",
-  packed: "Packed",
+  accepted: "Accepted",
+  packing: "Packing",
+  ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
   cancelled: "Cancelled",
@@ -43,7 +45,9 @@ const statusLabel: Record<OrderStatus, string> = {
 
 const statusClass: Record<OrderStatus, string> = {
   pending: "bg-warning/20 text-warning-foreground",
-  packed: "bg-accent text-accent-foreground",
+  accepted: "bg-blue-100 text-blue-700",
+  packing: "bg-accent text-accent-foreground",
+  ready_for_pickup: "bg-violet-100 text-violet-700",
   out_for_delivery: "bg-chart-3/20 text-foreground",
   delivered: "bg-success/15 text-success",
   cancelled: "bg-destructive/10 text-destructive",
@@ -74,7 +78,9 @@ function OrdersPage() {
           <TabsList className="flex-wrap">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="pending">Pending ({count("pending")})</TabsTrigger>
-            <TabsTrigger value="packed">Packed ({count("packed")})</TabsTrigger>
+            <TabsTrigger value="accepted">Accepted ({count("accepted")})</TabsTrigger>
+            <TabsTrigger value="packing">Packing ({count("packing")})</TabsTrigger>
+            <TabsTrigger value="ready_for_pickup">Ready ({count("ready_for_pickup")})</TabsTrigger>
             <TabsTrigger value="out_for_delivery">On the way ({count("out_for_delivery")})</TabsTrigger>
             <TabsTrigger value="delivered">Delivered ({count("delivered")})</TabsTrigger>
           </TabsList>
@@ -96,6 +102,7 @@ function OrdersPage() {
                 <TableHead className="text-right">Items</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead>Payment</TableHead>
+                <TableHead>Delivery partner</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-44">Update</TableHead>
               </TableRow>
@@ -111,6 +118,7 @@ function OrdersPage() {
                   <TableCell>
                     <Badge variant="outline">{o.payment}</Badge>
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{o.status === "out_for_delivery" ? "Assigned partner" : "—"}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={statusClass[o.status]}>
                       {statusLabel[o.status]}
@@ -140,7 +148,7 @@ function OrdersPage() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                     No orders found.
                   </TableCell>
                 </TableRow>

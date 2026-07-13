@@ -15,6 +15,7 @@ import { Route as ProductsRouteImport } from './routes/products'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as InventoryRouteImport } from './routes/inventory'
+import { Route as DeliveryPartnersRouteImport } from './routes/delivery-partners'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as IndexRouteImport } from './routes/index'
@@ -49,6 +50,11 @@ const InventoryRoute = InventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeliveryPartnersRoute = DeliveryPartnersRouteImport.update({
+  id: '/delivery-partners',
+  path: '/delivery-partners',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CustomersRoute = CustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
   '/customers': typeof CustomersRoute
+  '/delivery-partners': typeof DeliveryPartnersRoute
   '/inventory': typeof InventoryRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
   '/customers': typeof CustomersRoute
+  '/delivery-partners': typeof DeliveryPartnersRoute
   '/inventory': typeof InventoryRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
   '/customers': typeof CustomersRoute
+  '/delivery-partners': typeof DeliveryPartnersRoute
   '/inventory': typeof InventoryRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/categories'
     | '/customers'
+    | '/delivery-partners'
     | '/inventory'
     | '/offers'
     | '/orders'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/categories'
     | '/customers'
+    | '/delivery-partners'
     | '/inventory'
     | '/offers'
     | '/orders'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/categories'
     | '/customers'
+    | '/delivery-partners'
     | '/inventory'
     | '/offers'
     | '/orders'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CategoriesRoute: typeof CategoriesRoute
   CustomersRoute: typeof CustomersRoute
+  DeliveryPartnersRoute: typeof DeliveryPartnersRoute
   InventoryRoute: typeof InventoryRoute
   OffersRoute: typeof OffersRoute
   OrdersRoute: typeof OrdersRoute
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InventoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/delivery-partners': {
+      id: '/delivery-partners'
+      path: '/delivery-partners'
+      fullPath: '/delivery-partners'
+      preLoaderRoute: typeof DeliveryPartnersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/customers': {
       id: '/customers'
       path: '/customers'
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CategoriesRoute: CategoriesRoute,
   CustomersRoute: CustomersRoute,
+  DeliveryPartnersRoute: DeliveryPartnersRoute,
   InventoryRoute: InventoryRoute,
   OffersRoute: OffersRoute,
   OrdersRoute: OrdersRoute,

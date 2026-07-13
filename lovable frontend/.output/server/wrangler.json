@@ -1,0 +1,34 @@
+{
+  "compatibility_date": "2026-04-26",
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "webapp",
+  "pages_build_output_dir": "./dist",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "webapp-production",
+      "database_id": "local-placeholder-will-be-replaced-on-deploy"
+    }
+  ],
+  "vars": {
+    "DEV_MODE": "true"
+  },
+  "main": "index.mjs",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "../public"
+  },
+  "no_bundle": true,
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": [
+        "**/*.mjs",
+        "**/*.js"
+      ]
+    }
+  ]
+}

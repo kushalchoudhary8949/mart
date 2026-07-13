@@ -19,6 +19,7 @@ export type HttpStatusCode = typeof HTTP_STATUS[keyof typeof HTTP_STATUS];
 export const ROLES = {
   CUSTOMER: 'CUSTOMER',
   ADMIN: 'ADMIN',
+  DELIVERY_PARTNER: 'DELIVERY_PARTNER',
 } as const;
 
 export type UserRole = typeof ROLES[keyof typeof ROLES];
