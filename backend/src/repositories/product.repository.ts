@@ -78,6 +78,10 @@ export async function findMany(filters: ProductQueryFilters) {
             slug: true,
           },
         },
+        images: {
+          orderBy: { sortOrder: 'asc' },
+          select: { url: true },
+        },
       },
     }),
     prisma.product.count({ where }),
@@ -100,6 +104,10 @@ export async function findAllAdmin() {
         select: {
           name: true,
         },
+      },
+      images: {
+        orderBy: { sortOrder: 'asc' },
+        select: { url: true },
       },
     },
   });
@@ -157,6 +165,12 @@ export async function findRelated(categoryId: number, excludeProductId: number, 
       isActive: true,
     },
     take: limit,
+    include: {
+      images: {
+        orderBy: { sortOrder: 'asc' },
+        select: { url: true },
+      },
+    },
   });
 }
 
@@ -171,7 +185,7 @@ export async function create(data: {
   price: number;
   mrp: number;
   unit: string;
-  image?: string | null;
+  thumbnail?: string | null;
   stock?: number;
   isFeatured?: boolean;
 }) {
@@ -193,7 +207,7 @@ export async function update(
     price?: number;
     mrp?: number;
     unit?: string;
-    image?: string | null;
+    thumbnail?: string | null;
     stock?: number;
     isFeatured?: boolean;
     isActive?: boolean;

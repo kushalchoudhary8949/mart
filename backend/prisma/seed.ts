@@ -140,6 +140,7 @@ async function main() {
       data: {
         ...prod,
         categoryId: categoryIds.get(prod.categoryId)!,
+        thumbnail: prod.image,
       },
     });
 

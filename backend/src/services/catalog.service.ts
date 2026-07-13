@@ -56,7 +56,7 @@ export async function queryProducts(filters: {
     price: p.price,
     mrp: p.mrp,
     unit: p.unit,
-    image: p.image,
+    image: p.thumbnail ?? p.images?.[0]?.url ?? null,
     stock: p.stock,
     rating: p.rating,
     rating_count: p.ratingCount,
@@ -91,14 +91,14 @@ export async function getProductDetail(slug: string) {
     price: p.price,
     mrp: p.mrp,
     unit: p.unit,
-    image: p.image,
+    image: p.thumbnail ?? p.images?.[0]?.url ?? null,
     rating: p.rating,
   }));
 
   // Flatten gallery urls
   const images = product.images.length > 0
     ? product.images.map((img) => img.url)
-    : product.image ? [product.image] : [];
+    : product.thumbnail ? [product.thumbnail] : [];
 
   return {
     product: {
@@ -110,7 +110,7 @@ export async function getProductDetail(slug: string) {
       price: product.price,
       mrp: product.mrp,
       unit: product.unit,
-      image: product.image,
+      image: product.thumbnail ?? null,
       stock: product.stock,
       rating: product.rating,
       rating_count: product.ratingCount,
@@ -133,7 +133,7 @@ export async function getProductImageGallery(productId: number) {
 
   const images = product.images.length > 0
     ? product.images.map((img) => img.url)
-    : product.image ? [product.image] : [];
+    : product.thumbnail ? [product.thumbnail] : [];
 
   return { images };
 }

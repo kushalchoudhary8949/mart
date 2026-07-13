@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { serveStatic } from 'hono/cloudflare-workers'
 import type { AppEnv } from './types'
+import { servePublicAssets } from './serve-static'
 
 import authRoutes from './routes/auth'
 import productRoutes from './routes/products'
@@ -18,7 +18,7 @@ const app = new Hono<AppEnv>()
 app.use('/api/*', cors())
 
 // Serve static assets (CSS/JS) from public/static
-app.use('/static/*', serveStatic({ root: './public' }))
+app.use('/static/*', servePublicAssets())
 
 // --- API routes ---
 app.route('/api/auth', authRoutes)
