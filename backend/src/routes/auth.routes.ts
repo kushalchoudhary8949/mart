@@ -17,6 +17,7 @@ import {
   logout,
   logoutAll,
   getMe,
+  updateProfile,
 } from '../controllers/auth.controller';
 
 const router = Router();
@@ -47,5 +48,6 @@ router.post('/logout-all', authenticate, logoutAll);
 
 // Get current user profile
 router.get('/me', authenticate, getMe);
+router.put('/profile', authenticate, updateProfile);
 
 export default router;

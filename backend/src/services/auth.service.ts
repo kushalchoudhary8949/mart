@@ -261,8 +261,6 @@ export async function logoutAll(userId: number) {
   return { message: 'All sessions have been logged out.' };
 }
 
-// ─── Get Profile ─────────────────────────────────────────────────────────────
-
 export async function getProfile(userId: number) {
   const user = await userRepo.findById(userId);
   if (!user) {
@@ -272,9 +270,30 @@ export async function getProfile(userId: number) {
   return {
     id: user.id,
     phone: user.phone,
+    name: user.name,
+    email: user.email,
     role: user.role,
     isVerified: user.isVerified,
     isBlocked: user.isBlocked,
     createdAt: user.createdAt,
+  };
+}
+
+export async function updateProfile(userId: number, data: { name?: string; email?: string }) {
+  const { prisma } = await import('../config/database');
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      name: data.name ?? undefined,
+      email: data.email ?? undefined,
+    },
+  });
+  return {
+    id: user.id,
+    phone: user.phone,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isVerified: user.isVerified,
   };
 }

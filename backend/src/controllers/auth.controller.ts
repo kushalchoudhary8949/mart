@@ -84,3 +84,13 @@ export const getMe = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+export const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  const { name, email } = req.body;
+  const result = await authService.updateProfile(req.user!.id, { name, email });
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: result,
+  });
+});
