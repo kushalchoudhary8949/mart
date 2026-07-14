@@ -29,7 +29,10 @@ app.use(
 // Cross-Origin Resource Sharing
 app.use(
   cors({
-    origin: config.cors.origin,
+    origin(origin, callback) {
+      const allowed = new Set([...config.cors.origin, 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5175']);
+      callback(null, !origin || allowed.has(origin));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

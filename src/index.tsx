@@ -17,6 +17,17 @@ const app = new Hono<AppEnv>()
 
 app.use('/api/*', cors())
 
+// During local development the customer SPA keeps its same-origin /api contract
+// while the Express service remains the single source of truth.
+app.all('/api/*', async (c) => {
+  const backend = c.env?.BACKEND_URL || 'http://localhost:5001'
+  const target = `${backend}/api/v1${c.req.path.slice(4)}${new URL(c.req.url).search}`
+  const headers = new Headers(c.req.raw.headers)
+  headers.delete('host')
+  const response = await fetch(target, { method: c.req.method, headers, body: ['GET', 'HEAD'].includes(c.req.method) ? undefined : c.req.raw.body, duplex: 'half' as never })
+  return new Response(response.body, { status: response.status, headers: response.headers })
+})
+
 // Serve static assets (CSS/JS) from public/static
 app.use('/static/*', servePublicAssets())
 
@@ -51,6 +62,7 @@ const HTML_SHELL = `<!DOCTYPE html>
   <meta name="description" content="FreshCart - Online grocery shopping with fast delivery" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="/static/style.css" rel="stylesheet" />
@@ -84,6 +96,7 @@ const HTML_SHELL = `<!DOCTYPE html>
   <script src="/static/js/router.js"></script>
   <script src="/static/js/components.js"></script>
   <script src="/static/js/actions.js"></script>
+  <script src="/static/js/socket.js"></script>
   <script src="/static/js/pages/home.js"></script>
   <script src="/static/js/pages/auth.js"></script>
   <script src="/static/js/pages/categories.js"></script>

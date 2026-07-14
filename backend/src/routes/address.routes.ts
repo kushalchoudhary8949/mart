@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { authenticate } from '../middlewares/auth';
+import * as controller from '../controllers/address.controller';
+const router = Router();
+router.use(authenticate);
+router.get('/', controller.getAddresses);
+router.post('/', controller.addAddress);
+router.get('/:id', controller.getAddressDetail);
+router.put('/:id', controller.updateAddress);
+router.delete('/:id', controller.deleteAddress);
+export default router;

@@ -36,7 +36,8 @@ export const addAddress = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('full_address is required', HTTP_STATUS.BAD_REQUEST);
   }
 
-  const isDefault = is_default ? true : false;
+  const hasAddress = await prisma.address.count({ where: { userId } });
+  const isDefault = is_default ? true : hasAddress === 0;
 
   if (isDefault) {
     await prisma.address.updateMany({

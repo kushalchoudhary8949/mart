@@ -6,7 +6,7 @@ import { z } from 'zod';
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const envSchema = z.object({
-  PORT: z.coerce.number().default(5000),
+  PORT: z.coerce.number().default(5001),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   API_VERSION: z.string().default('v1'),
   DATABASE_URL: z.string().url(),
@@ -48,7 +48,7 @@ export const config = {
     refreshExpiration: parsedEnv.data.JWT_REFRESH_EXPIRATION,
   },
   cors: {
-    origin: parsedEnv.data.CORS_ORIGIN,
+    origin: parsedEnv.data.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
   },
   rateLimit: {
     max: parsedEnv.data.RATE_LIMIT_MAX,

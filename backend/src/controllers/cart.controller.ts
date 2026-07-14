@@ -66,6 +66,9 @@ export const addToCart = catchAsync(async (req: Request, res: Response) => {
   if (!product || !product.isActive) {
     throw new AppError('Product not found or inactive', HTTP_STATUS.NOT_FOUND);
   }
+  if (product.stock < 1) {
+    throw new AppError('Product is out of stock', HTTP_STATUS.CONFLICT);
+  }
 
   const existing = await prisma.cartItem.findUnique({
     where: { userId_productId: { userId, productId } }
@@ -116,7 +119,8 @@ export const updateCartItem = catchAsync(async (req: Request, res: Response) => 
     const product = await prisma.product.findUnique({
       where: { id: productId }
     });
-    const newQty = Math.min(product?.stock ?? 100, quantity);
+    if (!product || !product.isActive || product.stock < 1) throw new AppError('Product is out of stock', HTTP_STATUS.CONFLICT);
+    const newQty = Math.min(product.stock, quantity);
     await prisma.cartItem.update({
       where: { id: existing.id },
       data: { quantity: newQty }

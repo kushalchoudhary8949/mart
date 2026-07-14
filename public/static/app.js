@@ -65,9 +65,11 @@
         const { data } = await Api.me()
         Store.setUser(data.user)
         await Promise.all([Store.refreshCart(), Store.refreshWishlist(), Store.refreshNotifications()])
+        Realtime.connect()
       } catch (e) {
         Api.setToken(null)
         Store.setUser(null)
+        Realtime.disconnect()
       }
     }
     Router.start()

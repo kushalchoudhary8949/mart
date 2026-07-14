@@ -9,6 +9,8 @@ import {
   updateProductSchema,
   createBannerSchema,
   updateBannerSchema,
+  stockAdjustmentSchema,
+  offerSchema,
 } from '../validators/catalog.validator';
 import {
   getCategories,
@@ -23,6 +25,13 @@ import {
   createBanner,
   updateBanner,
   deleteBanner,
+  adjustStock,
+  getCustomers,
+  getKpis,
+  getOffers,
+  createOffer,
+  updateOffer,
+  deleteOffer,
 } from '../controllers/admin-catalog.controller';
 
 const router = Router();
@@ -41,6 +50,14 @@ router.get('/products', getProducts);
 router.post('/products', validate(createProductSchema), createProduct);
 router.put('/products/:id', validate(updateProductSchema), updateProduct);
 router.delete('/products/:id', deleteProduct);
+router.post('/products/:id/adjust-stock', validate(stockAdjustmentSchema), adjustStock);
+
+router.get('/customers', getCustomers);
+router.get('/kpis', getKpis);
+router.get('/offers', getOffers);
+router.post('/offers', validate(offerSchema), createOffer);
+router.put('/offers/:id', validate(offerSchema.partial()), updateOffer);
+router.delete('/offers/:id', deleteOffer);
 
 // --- Banners CRUD ---
 router.get('/banners', getBanners);

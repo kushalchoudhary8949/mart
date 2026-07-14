@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime, i as Slot } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-import { t as StoreProvider } from "./store-context-7bTw1BXx.mjs";
+import { t as StoreProvider } from "./store-context-C7Cjby2t.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { t as cn } from "./utils-C_uf36nf.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
@@ -14,10 +14,10 @@ import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
 import { t as Root } from "../_libs/radix-ui__react-separator.mjs";
 import { a as Trigger, i as Root3, n as Portal, r as Provider, t as Content2 } from "../_libs/radix-ui__react-tooltip.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-DSrzK_ZE.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DrP33e9M.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
-var styles_default = "/assets/styles-5Ug5IRzm.css";
+var styles_default = "/assets/styles-atDgV-FS.css";
 function reportLovableError(error, context = {}) {
 	if (typeof window === "undefined") return;
 	window.__lovableEvents?.captureException?.(error, {
@@ -563,12 +563,19 @@ function AppSidebar() {
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(item.icon, { className: "h-4 w-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: item.title })]
 				})
 			}) }, item.title)) }) })] }) }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SidebarFooter, {
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SidebarFooter, {
 				className: "px-3 py-3",
-				children: !collapsed && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				children: [!collapsed && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-xs text-sidebar-foreground/50",
 					children: "Open · 7 AM – 10 PM"
-				})
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: "mt-2 w-full rounded-md border px-2 py-1.5 text-sm",
+					onClick: () => {
+						localStorage.removeItem("admin_token");
+						window.location.reload();
+					},
+					children: "Logout"
+				})]
 			})
 		]
 	});
@@ -725,6 +732,8 @@ function RootShell({ children }) {
 }
 function RootComponent() {
 	const { queryClient } = Route$10.useRouteContext();
+	const [authenticated, setAuthenticated] = (0, import_react.useState)(() => typeof window !== "undefined" && Boolean(localStorage.getItem("admin_token")));
+	if (!authenticated) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AdminLogin, { onLogin: () => setAuthenticated(true) });
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(QueryClientProvider, {
 		client: queryClient,
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(StoreProvider, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SidebarProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -743,6 +752,73 @@ function RootComponent() {
 				})]
 			})]
 		}) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Toaster$1, {})] })
+	});
+}
+function AdminLogin({ onLogin }) {
+	const [phone, setPhone] = (0, import_react.useState)("9000000000");
+	const [password, setPassword] = (0, import_react.useState)("Admin@123456");
+	const [error, setError] = (0, import_react.useState)("");
+	const login = async (event) => {
+		event.preventDefault();
+		setError("");
+		try {
+			const response = await fetch("http://localhost:5001/api/v1/auth/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					phone,
+					password
+				})
+			});
+			const body = await response.json();
+			if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? "Admin credentials are required.");
+			localStorage.setItem("admin_token", body.data.accessToken);
+			onLogin();
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Unable to sign in.");
+		}
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("main", {
+		className: "flex min-h-screen items-center justify-center bg-muted p-4",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+			onSubmit: login,
+			className: "w-full max-w-sm rounded-2xl border bg-card p-8 shadow-xl",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+					className: "font-display text-2xl font-bold",
+					children: "Vrindavan Mart"
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mb-6 text-sm text-muted-foreground",
+					children: "Admin dashboard"
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
+					className: "mb-4 block text-sm",
+					children: ["Phone", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+						className: "mt-1 w-full rounded-md border p-2",
+						value: phone,
+						onChange: (e) => setPhone(e.target.value)
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
+					className: "mb-5 block text-sm",
+					children: ["Password", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+						type: "password",
+						className: "mt-1 w-full rounded-md border p-2",
+						value: password,
+						onChange: (e) => setPassword(e.target.value)
+					})]
+				}),
+				error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mb-3 text-sm text-destructive",
+					children: error
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: "w-full rounded-md bg-primary py-2 font-medium text-primary-foreground",
+					children: "Sign in"
+				})
+			]
+		})
 	});
 }
 var BASE_URL = "";
@@ -768,7 +844,7 @@ var Route$9 = createFileRoute("/sitemap.xml")({ server: { handlers: { GET: async
 		"Cache-Control": "public, max-age=3600"
 	} });
 } } } });
-var $$splitComponentImporter$8 = () => import("./reports-CnvbsC4q.mjs");
+var $$splitComponentImporter$8 = () => import("./reports-BjLCFG1-.mjs");
 var Route$8 = createFileRoute("/reports")({
 	head: () => ({ meta: [{ title: "Sales Reports — GroceryMart Admin" }, {
 		name: "description",
@@ -776,7 +852,7 @@ var Route$8 = createFileRoute("/reports")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$8, "component")
 });
-var $$splitComponentImporter$7 = () => import("./products-C9Ah2ch5.mjs");
+var $$splitComponentImporter$7 = () => import("./products-Rkr9Yo3t.mjs");
 var Route$7 = createFileRoute("/products")({
 	head: () => ({ meta: [{ title: "Products — GroceryMart Admin" }, {
 		name: "description",
@@ -784,7 +860,7 @@ var Route$7 = createFileRoute("/products")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$7, "component")
 });
-var $$splitComponentImporter$6 = () => import("./orders-QuQ-3F0t.mjs");
+var $$splitComponentImporter$6 = () => import("./orders-Dn--xgmc.mjs");
 var Route$6 = createFileRoute("/orders")({
 	head: () => ({ meta: [{ title: "Orders — GroceryMart Admin" }, {
 		name: "description",
@@ -792,7 +868,7 @@ var Route$6 = createFileRoute("/orders")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$6, "component")
 });
-var $$splitComponentImporter$5 = () => import("./offers-B9lPsyXD.mjs");
+var $$splitComponentImporter$5 = () => import("./offers-CmfXzpTf.mjs");
 var Route$5 = createFileRoute("/offers")({
 	head: () => ({ meta: [{ title: "Offers — GroceryMart Admin" }, {
 		name: "description",
@@ -800,7 +876,7 @@ var Route$5 = createFileRoute("/offers")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$5, "component")
 });
-var $$splitComponentImporter$4 = () => import("./inventory-c2DcCF4m.mjs");
+var $$splitComponentImporter$4 = () => import("./inventory-DSX1V-dg.mjs");
 var Route$4 = createFileRoute("/inventory")({
 	head: () => ({ meta: [{ title: "Inventory — GroceryMart Admin" }, {
 		name: "description",
@@ -810,7 +886,7 @@ var Route$4 = createFileRoute("/inventory")({
 });
 var $$splitComponentImporter$3 = () => import("./delivery-partners-4H7mf8t0.mjs");
 var Route$3 = createFileRoute("/delivery-partners")({ component: lazyRouteComponent($$splitComponentImporter$3, "component") });
-var $$splitComponentImporter$2 = () => import("./customers-CD1aA3yK.mjs");
+var $$splitComponentImporter$2 = () => import("./customers-BVwQ2vfD.mjs");
 var Route$2 = createFileRoute("/customers")({
 	head: () => ({ meta: [{ title: "Customers — GroceryMart Admin" }, {
 		name: "description",
@@ -818,7 +894,7 @@ var Route$2 = createFileRoute("/customers")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./categories-1DlqJ00t.mjs");
+var $$splitComponentImporter$1 = () => import("./categories-DGRIMIgr.mjs");
 var Route$1 = createFileRoute("/categories")({
 	head: () => ({ meta: [{ title: "Categories — GroceryMart Admin" }, {
 		name: "description",
@@ -826,7 +902,7 @@ var Route$1 = createFileRoute("/categories")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$1, "component")
 });
-var $$splitComponentImporter = () => import("./routes-zjSqdiSJ.mjs");
+var $$splitComponentImporter = () => import("./routes-Cb8KZ3IO.mjs");
 var Route = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "Dashboard — GroceryMart Admin" }, {
 		name: "description",

@@ -82,6 +82,25 @@ export const updateProductSchema = z.object({
   path: ['mrp'],
 });
 
+export const stockAdjustmentSchema = z.object({
+  quantity: z.number().int().nonnegative(),
+  reason: z.string().trim().min(2).max(250).default('Manual adjustment'),
+});
+
+export const offerSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  code: z.string().trim().toUpperCase().min(3).max(32).regex(/^[A-Z0-9_-]+$/),
+  type: z.enum(['PERCENTAGE', 'FLAT', 'BUY_X_GET_Y']),
+  value: z.number().nonnegative(),
+  buy_qty: z.number().int().positive().optional().nullable(),
+  get_qty: z.number().int().positive().optional().nullable(),
+  start_date: z.string().datetime(),
+  end_date: z.string().datetime(),
+  usage_limit: z.number().int().positive().optional().nullable(),
+  min_cart_value: z.number().nonnegative().optional().nullable(),
+  is_active: z.boolean().optional().default(true),
+});
+
 // ─── Banner Validators (Admin) ───────────────────────────────────────────────
 
 export const createBannerSchema = z.object({

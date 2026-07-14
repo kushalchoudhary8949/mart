@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { io, Socket } from 'socket.io-client';
 import './styles.css';
 
-const api = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api/v1';
+const api = import.meta.env.VITE_API_URL ?? 'http://localhost:5001/api/v1';
 const socketUrl = api.replace(/\/api\/v1$/, '');
 type Status = 'READY_FOR_PICKUP' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 type Order = { id: number; orderNo: string; total: number; paymentMethod: string; paymentStatus: string; addressText: string; status: Status; user: { name: string | null; phone: string }; items: Array<{ name: string; quantity: number; unit: string | null }> };

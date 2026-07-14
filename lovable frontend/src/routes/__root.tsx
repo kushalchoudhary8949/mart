@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -126,6 +126,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [authenticated, setAuthenticated] = useState(() => typeof window !== "undefined" && Boolean(localStorage.getItem("admin_token")));
+  if (!authenticated) return <AdminLogin onLogin={() => setAuthenticated(true)} />;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -149,4 +151,19 @@ function RootComponent() {
       </StoreProvider>
     </QueryClientProvider>
   );
+}
+
+function AdminLogin({ onLogin }: { onLogin: () => void }) {
+  const [phone, setPhone] = useState("9000000000");
+  const [password, setPassword] = useState("Admin@123456");
+  const [error, setError] = useState("");
+  const login = async (event: FormEvent) => {
+    event.preventDefault(); setError("");
+    try {
+      const response = await fetch("http://localhost:5001/api/v1/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, password }) });
+      const body = await response.json(); if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? "Admin credentials are required.");
+      localStorage.setItem("admin_token", body.data.accessToken); onLogin();
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to sign in."); }
+  };
+  return <main className="flex min-h-screen items-center justify-center bg-muted p-4"><form onSubmit={login} className="w-full max-w-sm rounded-2xl border bg-card p-8 shadow-xl"><h1 className="font-display text-2xl font-bold">Vrindavan Mart</h1><p className="mb-6 text-sm text-muted-foreground">Admin dashboard</p><label className="mb-4 block text-sm">Phone<input className="mt-1 w-full rounded-md border p-2" value={phone} onChange={(e) => setPhone(e.target.value)} /></label><label className="mb-5 block text-sm">Password<input type="password" className="mt-1 w-full rounded-md border p-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label>{error && <p className="mb-3 text-sm text-destructive">{error}</p>}<button className="w-full rounded-md bg-primary py-2 font-medium text-primary-foreground">Sign in</button></form></main>;
 }

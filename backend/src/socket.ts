@@ -33,3 +33,7 @@ export function emitOrderEvent(event: string, order: { id: number; userId: numbe
   io.to('role:ADMIN').emit(event, order);
   if (order.deliveryPartner?.userId) io.to(`user:${order.deliveryPartner.userId}`).emit(event, order);
 }
+
+export function emitStockUpdate(product: { id: number; stock: number }) {
+  io?.emit('stockUpdated', product);
+}

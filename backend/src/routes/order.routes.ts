@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { authenticate } from '../middlewares/auth';
+import * as controller from '../controllers/order.controller';
+const router = Router();
+router.use(authenticate);
+router.post('/checkout', controller.checkout);
+router.get('/', controller.getOrders);
+router.get('/:id/track', controller.trackOrder);
+router.post('/:id/cancel', controller.cancelOrder);
+router.post('/:id/reorder', controller.reorder);
+router.post('/:id/rate', controller.rateOrder);
+router.get('/:id', controller.getOrder);
+export default router;

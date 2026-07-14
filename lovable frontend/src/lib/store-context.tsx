@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export interface Category {
   id: string;
@@ -158,11 +158,41 @@ interface StoreState {
 const StoreContext = createContext<StoreState | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [categories, setCategories] = useState(initialCategories);
-  const [products, setProducts] = useState(initialProducts);
-  const [offers, setOffers] = useState(initialOffers);
-  const [orders, setOrders] = useState(initialOrders);
-  const [customers] = useState(initialCustomers);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const api = async (path: string, init?: RequestInit) => {
+    const token = typeof window === "undefined" ? null : localStorage.getItem("admin_token");
+    const response = await fetch(`http://localhost:5001/api/v1${path}`, { ...init, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers } });
+    const body = await response.json(); if (!response.ok) throw new Error(body.message ?? "Request failed"); return body.data;
+  };
+  const load = async () => {
+    try {
+      const [categoryData, productData, offerData, orderData, customerData] = await Promise.all([api("/admin/categories"), api("/admin/products"), api("/admin/offers"), api("/admin/orders?limit=100"), api("/admin/customers")]);
+      setCategories(categoryData.categories.map((c: any) => ({ id: String(c.id), name: c.name, emoji: c.icon ?? "🏷️", description: c.slug })));
+      setProducts(productData.products.map((p: any) => ({ id: String(p.id), name: p.name, emoji: "📦", categoryId: String(p.category_id), unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock, lowStockThreshold: p.low_stock_threshold ?? 10, active: Boolean(p.is_active) })));
+      setOffers(offerData.offers.map((o: any) => ({ id: String(o.id), title: o.name, code: o.code ?? "", type: o.type === "FLAT" ? "flat" : "percent", value: o.value, minOrder: o.minCartValue ?? 0, validTill: o.endDate, active: o.isActive })));
+      setOrders(orderData.orders.map((o: any) => ({ id: String(o.id), customerName: o.user?.name ?? o.user?.phone ?? "Customer", items: o.items?.length ?? 0, total: o.total, status: o.status.toLowerCase(), payment: o.paymentMethod, date: o.placedAt })));
+      setCustomers(customerData.customers.map((c: any) => ({ id: String(c.id), name: c.name ?? "Customer", phone: c.phone, email: c.email ?? "", orders: c.orders, totalSpent: c.totalSpent, joined: c.createdAt })));
+    } catch { /* Login and local development may not have the API available yet. */ }
+  };
+  useEffect(() => {
+    if (typeof window === "undefined" || !localStorage.getItem("admin_token")) return;
+    load();
+    const connect = () => {
+      const io = (window as Window & { io?: (url: string, options: unknown) => { onAny: (listener: () => void) => void; disconnect: () => void } }).io;
+      return io?.("http://localhost:5001", { auth: { token: localStorage.getItem("admin_token") } });
+    };
+    let socket = connect();
+    let script: HTMLScriptElement | undefined;
+    if (!socket) {
+      script = document.createElement("script"); script.src = "https://cdn.socket.io/4.8.1/socket.io.min.js"; script.onload = () => { socket = connect(); socket?.onAny(load); }; document.head.appendChild(script);
+    } else socket.onAny(load);
+    const refresh = window.setInterval(load, 15000);
+    return () => { window.clearInterval(refresh); socket?.disconnect(); script?.remove(); };
+  }, []);
 
   const value: StoreState = {
     categories,
@@ -170,22 +200,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     offers,
     orders,
     customers,
-    addProduct: (p) => setProducts((prev) => [{ ...p, id: `p${Date.now()}` }, ...prev]),
-    updateProduct: (p) => setProducts((prev) => prev.map((x) => (x.id === p.id ? p : x))),
-    deleteProduct: (id) => setProducts((prev) => prev.filter((x) => x.id !== id)),
-    addCategory: (c) => setCategories((prev) => [...prev, { ...c, id: `c${Date.now()}` }]),
-    updateCategory: (c) => setCategories((prev) => prev.map((x) => (x.id === c.id ? c : x))),
-    deleteCategory: (id) => setCategories((prev) => prev.filter((x) => x.id !== id)),
-    adjustStock: (id, delta) =>
-      setProducts((prev) =>
-        prev.map((x) => (x.id === id ? { ...x, stock: Math.max(0, x.stock + delta) } : x)),
-      ),
-    addOffer: (o) => setOffers((prev) => [{ ...o, id: `o${Date.now()}` }, ...prev]),
-    toggleOffer: (id) =>
-      setOffers((prev) => prev.map((x) => (x.id === id ? { ...x, active: !x.active } : x))),
-    deleteOffer: (id) => setOffers((prev) => prev.filter((x) => x.id !== id)),
-    updateOrderStatus: (id, status) =>
-      setOrders((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x))),
+    addProduct: (p) => { void api("/admin/products", { method: "POST", body: JSON.stringify({ category_id: Number(p.categoryId), name: p.name, slug: p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock }) }).then(load); },
+    updateProduct: (p) => { void api(`/admin/products/${p.id}`, { method: "PUT", body: JSON.stringify({ name: p.name, unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock, is_active: p.active }) }).then(load); },
+    deleteProduct: (id) => { void api(`/admin/products/${id}`, { method: "DELETE" }).then(load); },
+    addCategory: (c) => { void api("/admin/categories", { method: "POST", body: JSON.stringify({ name: c.name, slug: c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") }) }).then(load); },
+    updateCategory: (c) => { void api(`/admin/categories/${c.id}`, { method: "PUT", body: JSON.stringify({ name: c.name }) }).then(load); },
+    deleteCategory: (id) => { void api(`/admin/categories/${id}`, { method: "DELETE" }).then(load); },
+    adjustStock: (id, delta) => { const product = products.find((p) => p.id === id); if (product) void api(`/admin/products/${id}/adjust-stock`, { method: "POST", body: JSON.stringify({ quantity: Math.max(0, product.stock + delta), reason: "Admin dashboard adjustment" }) }).then(load); },
+    addOffer: (o) => { void api("/admin/offers", { method: "POST", body: JSON.stringify({ name: o.title, code: o.code, type: o.type === "flat" ? "FLAT" : "PERCENTAGE", value: o.value, min_cart_value: o.minOrder, start_date: new Date().toISOString(), end_date: new Date(o.validTill).toISOString(), is_active: o.active }) }).then(load); },
+    toggleOffer: (id) => { const offer = offers.find((o) => o.id === id); if (offer) void api(`/admin/offers/${id}`, { method: "PUT", body: JSON.stringify({ is_active: !offer.active }) }).then(load); },
+    deleteOffer: (id) => { void api(`/admin/offers/${id}`, { method: "DELETE" }).then(load); },
+    updateOrderStatus: (id, status) => { void api(`/admin/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status: status.toUpperCase() }) }).then(load); },
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1783959972311" clover="3.2.0">
-  <project timestamp="1783959972311" name="All files">
-    <metrics statements="173" coveredstatements="161" conditionals="73" coveredconditionals="57" methods="23" coveredmethods="23" elements="269" coveredelements="241" complexity="0" loc="173" ncloc="173" packages="3" files="5" classes="5"/>
+<coverage generated="1784001873377" clover="3.2.0">
+  <project timestamp="1784001873377" name="All files">
+    <metrics statements="177" coveredstatements="162" conditionals="77" coveredconditionals="57" methods="25" coveredmethods="23" elements="279" coveredelements="242" complexity="0" loc="177" ncloc="177" packages="3" files="5" classes="5"/>
     <package name="middlewares">
       <metrics statements="35" coveredstatements="32" conditionals="18" coveredconditionals="15" methods="3" coveredmethods="3"/>
       <file name="auth.ts" path="/Users/kushal/vrindawan mart /mart/backend/src/middlewares/auth.ts">
@@ -44,9 +44,9 @@
       </file>
     </package>
     <package name="services">
-      <metrics statements="119" coveredstatements="110" conditionals="54" coveredconditionals="41" methods="15" coveredmethods="15"/>
+      <metrics statements="123" coveredstatements="111" conditionals="58" coveredconditionals="41" methods="17" coveredmethods="15"/>
       <file name="auth.service.ts" path="/Users/kushal/vrindawan mart /mart/backend/src/services/auth.service.ts">
-        <metrics statements="119" coveredstatements="110" conditionals="54" coveredconditionals="41" methods="15" coveredmethods="15"/>
+        <metrics statements="123" coveredstatements="111" conditionals="58" coveredconditionals="41" methods="17" coveredmethods="15"/>
         <line num="2" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
@@ -161,11 +161,15 @@
         <line num="259" count="1" type="stmt"/>
         <line num="260" count="1" type="stmt"/>
         <line num="261" count="1" type="stmt"/>
-        <line num="266" count="1" type="stmt"/>
-        <line num="267" count="2" type="stmt"/>
-        <line num="268" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="269" count="1" type="stmt"/>
-        <line num="272" count="1" type="stmt"/>
+        <line num="264" count="1" type="stmt"/>
+        <line num="265" count="2" type="stmt"/>
+        <line num="266" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="267" count="1" type="stmt"/>
+        <line num="270" count="1" type="stmt"/>
+        <line num="282" count="1" type="stmt"/>
+        <line num="283" count="0" type="stmt"/>
+        <line num="284" count="0" type="stmt"/>
+        <line num="291" count="0" type="stmt"/>
       </file>
     </package>
     <package name="utils">

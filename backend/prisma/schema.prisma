@@ -237,6 +237,8 @@ model Order {
   outForDeliveryAt DateTime?           @map("out_for_delivery_at")
   deliveredAt     DateTime?            @map("delivered_at")
   cancelledAt     DateTime?            @map("cancelled_at")
+  rating          Int?
+  review          String?
   updatedAt       DateTime             @updatedAt @map("updated_at")
 
   user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -334,6 +336,7 @@ model InventoryHistory {
 model Offer {
   id           Int             @id @default(autoincrement())
   name         String
+  code         String?         @unique
   type         OfferType
   value        Float
   buyQty       Int?            @map("buy_qty")
