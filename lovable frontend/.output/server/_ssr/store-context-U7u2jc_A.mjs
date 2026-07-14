@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/store-context-C7Cjby2t.js
+//#region node_modules/.nitro/vite/services/ssr/assets/store-context-U7u2jc_A.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var weeklySales = [
@@ -172,11 +172,29 @@ function StoreProvider({ children }) {
 		} catch {}
 	};
 	(0, import_react.useEffect)(() => {
-		if (typeof window !== "undefined" && localStorage.getItem("admin_token")) {
-			load();
-			const refresh = window.setInterval(load, 15e3);
-			return () => clearInterval(refresh);
-		}
+		if (typeof window === "undefined" || !localStorage.getItem("admin_token")) return;
+		load();
+		const connect = () => {
+			const io = window.io;
+			return io?.("http://localhost:5001", { auth: { token: localStorage.getItem("admin_token") } });
+		};
+		let socket = connect();
+		let script;
+		if (!socket) {
+			script = document.createElement("script");
+			script.src = "https://cdn.socket.io/4.8.1/socket.io.min.js";
+			script.onload = () => {
+				socket = connect();
+				socket?.onAny(load);
+			};
+			document.head.appendChild(script);
+		} else socket.onAny(load);
+		const refresh = window.setInterval(load, 15e3);
+		return () => {
+			window.clearInterval(refresh);
+			socket?.disconnect();
+			script?.remove();
+		};
 	}, []);
 	const value = {
 		categories,
