@@ -91,6 +91,7 @@ export const rateLimiter = rateLimit({
   max: config.rateLimit.max,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => config.env === 'development' || config.env === 'test',
   handler: (_req, _res, next) => {
     next(new AppError('Too many requests, please try again later.', HTTP_STATUS.TOO_MANY_REQUESTS));
   },
@@ -102,6 +103,7 @@ export const otpRequestLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   keyGenerator: (req) => `${req.ip}:otp`,
+  skip: () => config.env === 'development' || config.env === 'test',
 });
 
 export const loginAttemptLimiter = rateLimit({
@@ -110,5 +112,6 @@ export const loginAttemptLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   keyGenerator: (req) => `${req.ip}:login`,
+  skip: () => config.env === 'development' || config.env === 'test',
 });
 

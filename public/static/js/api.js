@@ -19,7 +19,36 @@ const Api = (() => {
   })
 
   client.interceptors.response.use(
-    (res) => res,
+    (res) => {
+      // If the response from Express backend wraps its payload in a nested 'data' object
+      if (res && res.data && res.data.success === true && res.data.data !== undefined) {
+        const payload = res.data.data;
+        if (payload && typeof payload === 'object') {
+          // Flatten the response payload so that top-level properties are directly accessible
+          res.data = {
+            success: true,
+            ...res.data, // preserve other top-level keys if any
+            ...payload   // merge properties from res.data.data
+          };
+
+          // Compat key mapping for auth: promote accessToken to token
+          if (payload.accessToken && !res.data.token) {
+            res.data.token = payload.accessToken;
+          }
+
+          // Compat key mapping for user objects: if payload is a user object (has phone and role but not nested user)
+          if (payload.phone && payload.role && !res.data.user) {
+            res.data.user = payload;
+          }
+
+          // Compat key mapping for OTP request: promote mockOtp to debug_otp
+          if (payload.mockOtp && !res.data.debug_otp) {
+            res.data.debug_otp = payload.mockOtp;
+          }
+        }
+      }
+      return res;
+    },
     (err) => {
       if (err.response && err.response.status === 401) {
         setToken(null)

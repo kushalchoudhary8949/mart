@@ -67,13 +67,20 @@ describe('Authentication flows', () => {
   });
 
   it('generates OTP and returns a mock code in development', async () => {
+    const originalEnv = config.env;
+    config.env = 'development' as any;
     mockedOtpService.createOtp.mockResolvedValue('123456');
 
     const result = await authService.requestOtp('9876543210');
 
     expect(mockedOtpService.createOtp).toHaveBeenCalledWith('9876543210');
-    expect(result).toEqual({ message: 'OTP generated successfully.' });
+    expect(result).toEqual({
+      message: 'OTP generated successfully.',
+      mockOtp: '123456',
+    });
+    config.env = originalEnv;
   });
+
 
   it('does not return a mock OTP in production mode', async () => {
     const originalEnv = config.env;

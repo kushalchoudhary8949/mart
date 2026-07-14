@@ -31,6 +31,7 @@ export function emitOrderEvent(event: string, order: { id: number; userId: numbe
   io.to(`order:${order.id}`).emit(event, order);
   io.to(`user:${order.userId}`).emit(event, order);
   io.to('role:ADMIN').emit(event, order);
+  io.to('role:DELIVERY_PARTNER').emit(event, order);
   if (order.deliveryPartner?.userId) io.to(`user:${order.deliveryPartner.userId}`).emit(event, order);
 }
 

@@ -92,9 +92,10 @@ const AuthPage = (() => {
         document.getElementById('auth-step-phone').classList.add('hidden')
         document.getElementById('auth-step-otp').classList.remove('hidden')
         document.getElementById('otp-phone-display').textContent = '+91 ' + phone
-        if (data.debug_otp) {
+        const otpCode = data.debug_otp || data.data?.mockOtp || data.data?.debug_otp
+        if (otpCode) {
           document.getElementById('demo-otp-banner').classList.remove('hidden')
-          document.getElementById('demo-otp-code').textContent = data.debug_otp
+          document.getElementById('demo-otp-code').textContent = otpCode
         }
         startResendTimer()
         document.querySelector('#otp-boxes input').focus()

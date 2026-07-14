@@ -17,15 +17,22 @@ const app = new Hono<AppEnv>()
 
 app.use('/api/*', cors())
 
-// During local development the customer SPA keeps its same-origin /api contract
-// while the Express service remains the single source of truth.
 app.all('/api/*', async (c) => {
   const backend = c.env?.BACKEND_URL || 'http://localhost:5001'
   const target = `${backend}/api/v1${c.req.path.slice(4)}${new URL(c.req.url).search}`
   const headers = new Headers(c.req.raw.headers)
   headers.delete('host')
   const response = await fetch(target, { method: c.req.method, headers, body: ['GET', 'HEAD'].includes(c.req.method) ? undefined : c.req.raw.body, duplex: 'half' as never })
-  return new Response(response.body, { status: response.status, headers: response.headers })
+  
+  // Clone backend headers and strip compression/hop-by-hop connection headers
+  const resHeaders = new Headers(response.headers)
+  resHeaders.delete('content-encoding')
+  resHeaders.delete('content-length')
+  resHeaders.delete('transfer-encoding')
+  resHeaders.delete('connection')
+  resHeaders.delete('keep-alive')
+
+  return new Response(response.body, { status: response.status, headers: resHeaders })
 })
 
 // Serve static assets (CSS/JS) from public/static
