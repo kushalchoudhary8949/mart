@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Trash2, BadgePercent, CalendarDays } from "lucide-react";
+import { Plus, Trash2, BadgePercent, CalendarDays, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ const emptyForm = {
 };
 
 function OffersPage() {
-  const { offers, addOffer, toggleOffer, deleteOffer } = useStore();
+  const { offers, addOffer, toggleOffer, deleteOffer, broadcastOffer } = useStore();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
@@ -87,6 +87,23 @@ function OffersPage() {
                   <BadgePercent className="h-5 w-5" />
                 </div>
                 <div className="flex items-center gap-1">
+                  {o.active && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={async () => { 
+                        try {
+                          await broadcastOffer(o.id);
+                          toast.success(`Broadcasted offer "${o.title}" to customers! 🎉`);
+                        } catch (err) {
+                          toast.error("Failed to broadcast offer.");
+                        }
+                      }}
+                      title="Tell Customers"
+                    >
+                      <Megaphone className="h-4 w-4 text-brand-600" />
+                    </Button>
+                  )}
                   <Switch checked={o.active} onCheckedChange={() => toggleOffer(o.id)} />
                   <Button variant="ghost" size="icon" onClick={() => { deleteOffer(o.id); toast.success("Offer deleted"); }}>
                     <Trash2 className="h-4 w-4 text-destructive" />

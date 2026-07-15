@@ -30,8 +30,10 @@ app.use(
 app.use(
   cors({
     origin(origin, callback) {
+      if (!origin) return callback(null, true);
       const allowed = new Set([...config.cors.origin, 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5175']);
-      callback(null, !origin || allowed.has(origin));
+      const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+      callback(null, allowed.has(origin) || isLocalhost);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

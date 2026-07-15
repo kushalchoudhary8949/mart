@@ -47,7 +47,8 @@ const statusVariant: Record<OrderStatus, string> = {
 function Dashboard() {
   const { orders, products, customers } = useStore();
 
-  const todayOrders = orders.filter((o) => o.date === "2026-07-12");
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayOrders = orders.filter((o) => o.date === todayStr);
   const todayRevenue = todayOrders
     .filter((o) => o.status !== "cancelled")
     .reduce((s, o) => s + o.total, 0);

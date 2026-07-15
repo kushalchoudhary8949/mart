@@ -1,10 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Bell, Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -14,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useStore, formatINR } from "@/lib/store-context";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/customers")({
   head: () => ({
@@ -26,8 +37,13 @@ export const Route = createFileRoute("/customers")({
 });
 
 function CustomersPage() {
-  const { customers } = useStore();
+  const { customers, sendNotification } = useStore();
   const [search, setSearch] = useState("");
+  const [notifTarget, setNotifTarget] = useState<any | null>(null);
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
+  const [notifType, setNotifType] = useState("promo");
+  const [sending, setSending] = useState(false);
 
   const filtered = customers.filter((c) => {
     const q = search.toLowerCase();
@@ -64,6 +80,7 @@ function CustomersPage() {
                 <TableHead className="text-right">Total spent</TableHead>
                 <TableHead>Segment</TableHead>
                 <TableHead>Joined</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,11 +112,27 @@ function CustomersPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{c.joined}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="inline-flex items-center gap-1 h-8"
+                      onClick={() => {
+                        setNotifTarget(c);
+                        setNotifTitle("");
+                        setNotifMessage("");
+                        setNotifType("promo");
+                      }}
+                    >
+                      <Bell className="h-3.5 w-3.5 text-brand-600" />
+                      Notify
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                     No customers found.
                   </TableCell>
                 </TableRow>
@@ -108,6 +141,87 @@ function CustomersPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!notifTarget} onOpenChange={(open) => !open && setNotifTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Notification to {notifTarget?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                placeholder="e.g. Special Discount for You!"
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                placeholder="Type your notification message here…"
+                value={notifMessage}
+                onChange={(e) => setNotifMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Type</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="notifType"
+                    value="promo"
+                    checked={notifType === "promo"}
+                    onChange={() => setNotifType("promo")}
+                    className="accent-brand-600"
+                  />
+                  Promo
+                </label>
+                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="notifType"
+                    value="system"
+                    checked={notifType === "system"}
+                    onChange={() => setNotifType("system")}
+                    className="accent-brand-600"
+                  />
+                  System
+                </label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex sm:justify-end gap-2">
+            <Button variant="ghost" onClick={() => setNotifTarget(null)} disabled={sending}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-1.5"
+              disabled={sending || !notifTitle.trim() || !notifMessage.trim()}
+              onClick={async () => {
+                if (!notifTarget) return;
+                setSending(true);
+                try {
+                  await sendNotification(notifTarget.id, notifTitle, notifMessage, notifType);
+                  toast.success("Notification sent successfully!");
+                  setNotifTarget(null);
+                } catch (err) {
+                  toast.error("Failed to send notification.");
+                } finally {
+                  setSending(false);
+                }
+              }}
+            >
+              <Send className="h-3.5 w-3.5" />
+              Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

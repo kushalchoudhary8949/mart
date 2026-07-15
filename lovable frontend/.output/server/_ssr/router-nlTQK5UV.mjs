@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime, i as Slot } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-import { t as StoreProvider } from "./store-context-U7u2jc_A.mjs";
+import { t as StoreProvider } from "./store-context-91WXZWxM.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { t as cn } from "./utils-C_uf36nf.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
@@ -14,7 +14,7 @@ import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
 import { t as Root } from "../_libs/radix-ui__react-separator.mjs";
 import { a as Trigger, i as Root3, n as Portal, r as Provider, t as Content2 } from "../_libs/radix-ui__react-tooltip.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-CL1Dvxj7.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-nlTQK5UV.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-atDgV-FS.css";
@@ -844,7 +844,7 @@ var Route$9 = createFileRoute("/sitemap.xml")({ server: { handlers: { GET: async
 		"Cache-Control": "public, max-age=3600"
 	} });
 } } } });
-var $$splitComponentImporter$8 = () => import("./reports-BMRCklzs.mjs");
+var $$splitComponentImporter$8 = () => import("./reports-C_nOBUM9.mjs");
 var Route$8 = createFileRoute("/reports")({
 	head: () => ({ meta: [{ title: "Sales Reports — GroceryMart Admin" }, {
 		name: "description",
@@ -852,7 +852,7 @@ var Route$8 = createFileRoute("/reports")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$8, "component")
 });
-var $$splitComponentImporter$7 = () => import("./products-Bi05Np7A.mjs");
+var $$splitComponentImporter$7 = () => import("./products-Co6qSOzL.mjs");
 var Route$7 = createFileRoute("/products")({
 	head: () => ({ meta: [{ title: "Products — GroceryMart Admin" }, {
 		name: "description",
@@ -860,7 +860,7 @@ var Route$7 = createFileRoute("/products")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$7, "component")
 });
-var $$splitComponentImporter$6 = () => import("./orders-B4bTq2of.mjs");
+var $$splitComponentImporter$6 = () => import("./orders-DCQXA03H.mjs");
 var Route$6 = createFileRoute("/orders")({
 	head: () => ({ meta: [{ title: "Orders — GroceryMart Admin" }, {
 		name: "description",
@@ -868,7 +868,7 @@ var Route$6 = createFileRoute("/orders")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$6, "component")
 });
-var $$splitComponentImporter$5 = () => import("./offers-BGA2QjRq.mjs");
+var $$splitComponentImporter$5 = () => import("./offers-CclaOEFy.mjs");
 var Route$5 = createFileRoute("/offers")({
 	head: () => ({ meta: [{ title: "Offers — GroceryMart Admin" }, {
 		name: "description",
@@ -876,7 +876,7 @@ var Route$5 = createFileRoute("/offers")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$5, "component")
 });
-var $$splitComponentImporter$4 = () => import("./inventory-DXhGpfro.mjs");
+var $$splitComponentImporter$4 = () => import("./inventory-CYCg8Jzm.mjs");
 var Route$4 = createFileRoute("/inventory")({
 	head: () => ({ meta: [{ title: "Inventory — GroceryMart Admin" }, {
 		name: "description",
@@ -886,7 +886,7 @@ var Route$4 = createFileRoute("/inventory")({
 });
 var $$splitComponentImporter$3 = () => import("./delivery-partners-4H7mf8t0.mjs");
 var Route$3 = createFileRoute("/delivery-partners")({ component: lazyRouteComponent($$splitComponentImporter$3, "component") });
-var $$splitComponentImporter$2 = () => import("./customers-CyQhU_4x.mjs");
+var $$splitComponentImporter$2 = () => import("./customers-Bax8-Gjc.mjs");
 var Route$2 = createFileRoute("/customers")({
 	head: () => ({ meta: [{ title: "Customers — GroceryMart Admin" }, {
 		name: "description",
@@ -894,7 +894,7 @@ var Route$2 = createFileRoute("/customers")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./categories-CEZsO91L.mjs");
+var $$splitComponentImporter$1 = () => import("./categories-MLYxgH9S.mjs");
 var Route$1 = createFileRoute("/categories")({
 	head: () => ({ meta: [{ title: "Categories — GroceryMart Admin" }, {
 		name: "description",
@@ -902,7 +902,7 @@ var Route$1 = createFileRoute("/categories")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$1, "component")
 });
-var $$splitComponentImporter = () => import("./routes-CKJ3WxW3.mjs");
+var $$splitComponentImporter = () => import("./routes-DfxTKP2n.mjs");
 var Route = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "Dashboard — GroceryMart Admin" }, {
 		name: "description",

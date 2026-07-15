@@ -32,6 +32,8 @@ import {
   createOffer,
   updateOffer,
   deleteOffer,
+  sendNotification,
+  broadcastOffer,
 } from '../controllers/admin-catalog.controller';
 
 const router = Router();
@@ -53,11 +55,13 @@ router.delete('/products/:id', deleteProduct);
 router.post('/products/:id/adjust-stock', validate(stockAdjustmentSchema), adjustStock);
 
 router.get('/customers', getCustomers);
+router.post('/notifications', sendNotification);
 router.get('/kpis', getKpis);
 router.get('/offers', getOffers);
 router.post('/offers', validate(offerSchema), createOffer);
 router.put('/offers/:id', validate(offerSchema.partial()), updateOffer);
 router.delete('/offers/:id', deleteOffer);
+router.post('/offers/:id/broadcast', broadcastOffer);
 
 // --- Banners CRUD ---
 router.get('/banners', getBanners);

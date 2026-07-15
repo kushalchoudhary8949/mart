@@ -64,6 +64,9 @@ const AddressesPage = (() => {
           <h3 class="font-bold text-lg text-gray-800">Add New Address</h3>
           <button id="close-modal" class="text-gray-400"><i class="fas fa-xmark text-xl"></i></button>
         </div>
+        <button id="detect-loc-btn" class="w-full mb-3 flex items-center justify-center gap-2 border border-brand-200 text-brand-700 font-semibold py-2.5 rounded-xl text-sm bg-brand-50 hover:bg-brand-100 transition-colors">
+          <i class="fas fa-location-crosshairs"></i> Use Current Location
+        </button>
         <label class="text-xs font-medium text-gray-500 mb-1 block">Label</label>
         <input id="addr-label" placeholder="Home, Work, etc." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-3" />
         <label class="text-xs font-medium text-gray-500 mb-1 block">Full Address</label>
@@ -77,6 +80,46 @@ const AddressesPage = (() => {
     document.body.appendChild(modal)
     modal.querySelector('#close-modal').addEventListener('click', () => modal.remove())
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove() })
+
+    const detectBtn = modal.querySelector('#detect-loc-btn')
+    detectBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        UI.toast('Geolocation is not supported by your browser', 'error')
+        return
+      }
+      detectBtn.disabled = true
+      detectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting location...'
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude
+          const lon = position.coords.longitude
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
+              headers: { 'Accept-Language': 'en' }
+            })
+            const data = await res.json()
+            if (data && data.display_name) {
+              document.getElementById('addr-full').value = data.display_name
+              UI.toast('Location detected!', 'success')
+            } else {
+              UI.toast('Could not resolve location address', 'error')
+            }
+          } catch (err) {
+            UI.toast('Error fetching address from coordinates', 'error')
+          } finally {
+            detectBtn.disabled = false
+            detectBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Use Current Location'
+          }
+        },
+        (error) => {
+          UI.toast(`Location access failed: ${error.message}`, 'error')
+          detectBtn.disabled = false
+          detectBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Use Current Location'
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      )
+    })
+
     modal.querySelector('#save-addr-btn').addEventListener('click', async () => {
       const label = document.getElementById('addr-label').value.trim() || 'Home'
       const fullAddress = document.getElementById('addr-full').value.trim()

@@ -1,14 +1,14 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-import { a as useStore } from "./store-context-U7u2jc_A.mjs";
+import { a as useStore } from "./store-context-91WXZWxM.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
 import { t as Input } from "./input-B8Q2ztVi.mjs";
 import { f as Plus, i as Trash2, m as Pencil } from "../_libs/lucide-react.mjs";
 import { a as DialogTitle, i as DialogHeader, n as DialogContent, o as Label, r as DialogFooter, t as Dialog } from "./dialog-DBHicK12.mjs";
 import { n as CardContent, t as Card } from "./card-BXjpJ96D.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/categories-CEZsO91L.js
+//#region node_modules/.nitro/vite/services/ssr/assets/categories-MLYxgH9S.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function CategoriesPage() {

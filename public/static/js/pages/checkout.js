@@ -113,6 +113,9 @@ const CheckoutPage = (() => {
             <h3 class="font-bold text-lg text-gray-800">Add New Address</h3>
             <button id="close-addr-modal" class="text-gray-400"><i class="fas fa-xmark text-xl"></i></button>
           </div>
+          <button id="detect-loc-btn" class="w-full mb-3 flex items-center justify-center gap-2 border border-brand-200 text-brand-700 font-semibold py-2.5 rounded-xl text-sm bg-brand-50 hover:bg-brand-100 transition-colors">
+            <i class="fas fa-location-crosshairs"></i> Use Current Location
+          </button>
           <label class="text-xs font-medium text-gray-500 mb-1 block">Label</label>
           <input id="addr-label" placeholder="Home, Work, etc." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-3" />
           <label class="text-xs font-medium text-gray-500 mb-1 block">Full Address</label>
@@ -123,6 +126,46 @@ const CheckoutPage = (() => {
       document.body.appendChild(modal)
       modal.querySelector('#close-addr-modal').addEventListener('click', () => modal.remove())
       modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove() })
+
+      const detectBtn = modal.querySelector('#detect-loc-btn')
+      detectBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          UI.toast('Geolocation is not supported by your browser', 'error')
+          return
+        }
+        detectBtn.disabled = true
+        detectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting location...'
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude
+            const lon = position.coords.longitude
+            try {
+              const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
+                headers: { 'Accept-Language': 'en' }
+              })
+              const data = await res.json()
+              if (data && data.display_name) {
+                document.getElementById('addr-full').value = data.display_name
+                UI.toast('Location detected!', 'success')
+              } else {
+                UI.toast('Could not resolve location address', 'error')
+              }
+            } catch (err) {
+              UI.toast('Error fetching address from coordinates', 'error')
+            } finally {
+              detectBtn.disabled = false
+              detectBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Use Current Location'
+            }
+          },
+          (error) => {
+            UI.toast(`Location access failed: ${error.message}`, 'error')
+            detectBtn.disabled = false
+            detectBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Use Current Location'
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        )
+      })
+
       modal.querySelector('#save-addr-btn').addEventListener('click', async () => {
         const label = document.getElementById('addr-label').value.trim() || 'Home'
         const fullAddress = document.getElementById('addr-full').value.trim()
@@ -138,12 +181,66 @@ const CheckoutPage = (() => {
       })
     }
 
+    function showUPIModal(total, onPaymentComplete) {
+      const modal = document.createElement('div')
+      modal.className = 'fixed inset-0 modal-backdrop z-50 flex items-center justify-center px-4'
+      modal.innerHTML = `
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-gray-800 text-lg">UPI Payment</h3>
+            <button id="close-upi-modal" class="text-gray-400 hover:text-gray-600"><i class="fas fa-xmark text-xl"></i></button>
+          </div>
+          <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4">
+            <p class="text-xs text-gray-500">Amount to Pay</p>
+            <p class="text-2xl font-extrabold text-brand-600 mt-0.5">${UI.money(total)}</p>
+          </div>
+          <div class="w-48 h-48 mx-auto bg-white border border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center relative mb-4">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('upi://pay?pa=vrindavanmart@okaxis&pn=VrindavanMart&am=' + total + '&cu=INR')}" 
+                 alt="UPI QR Code" 
+                 class="w-full h-full object-contain" />
+          </div>
+          <p class="text-xs text-gray-500 mb-4">Scan QR code using Google Pay, PhonePe, Paytm, or any UPI app to pay.</p>
+          <div class="flex justify-between items-center text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5 mb-5">
+            <span>UPI ID: <strong class="text-gray-600">vrindavanmart@okaxis</strong></span>
+            <button id="copy-upi-btn" class="text-brand-600 font-semibold">Copy</button>
+          </div>
+          <div class="flex gap-3">
+            <button id="simulate-fail-btn" class="flex-1 border border-red-200 text-red-500 rounded-xl py-3 text-sm font-semibold hover:bg-red-50 transition-colors">Simulate Fail</button>
+            <button id="simulate-success-btn" class="flex-1 bg-brand-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-brand-700 transition-colors">Simulate Success</button>
+          </div>
+        </div>
+      `
+      document.body.appendChild(modal)
+      modal.querySelector('#close-upi-modal').addEventListener('click', () => modal.remove())
+      modal.querySelector('#copy-upi-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText('vrindavanmart@okaxis')
+        UI.toast('UPI ID copied!', 'info')
+      })
+      modal.querySelector('#simulate-fail-btn').addEventListener('click', () => {
+        modal.remove()
+        UI.toast('Payment simulation failed.', 'error')
+      })
+      modal.querySelector('#simulate-success-btn').addEventListener('click', () => {
+        modal.remove()
+        UI.toast('Payment verified! 🎉', 'success')
+        onPaymentComplete()
+      })
+    }
+
     async function placeOrder() {
       if (!selectedAddressId && !selectedAddressText) {
         UI.toast('Please add a delivery address', 'error')
         return
       }
       const paymentMethod = document.querySelector('input[name="payment"]:checked').value
+      if (paymentMethod === 'upi') {
+        showUPIModal(summary?.total || 0, () => executeCheckout('UPI', 'PAID'))
+      } else {
+        executeCheckout(paymentMethod, 'PENDING')
+      }
+    }
+
+    async function executeCheckout(paymentMethod, paymentStatus) {
       const btn = document.getElementById('place-order-btn')
       btn.disabled = true
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Placing order...'
@@ -152,7 +249,8 @@ const CheckoutPage = (() => {
           address_id: selectedAddressId,
           address_text: selectedAddressText,
           coupon_code: summary?.coupon || null,
-          payment_method: paymentMethod
+          payment_method: paymentMethod,
+          payment_status: paymentStatus
         })
         sessionStorage.removeItem('fc_checkout_summary')
         Store.setCart([], 0)

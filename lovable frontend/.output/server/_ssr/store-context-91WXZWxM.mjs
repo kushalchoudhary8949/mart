@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/store-context-U7u2jc_A.js
+//#region node_modules/.nitro/vite/services/ssr/assets/store-context-91WXZWxM.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var weeklySales = [
@@ -158,7 +158,7 @@ function StoreProvider({ children }) {
 				total: o.total,
 				status: o.status.toLowerCase(),
 				payment: o.paymentMethod,
-				date: o.placedAt
+				date: o.placedAt ? o.placedAt.split("T")[0] : ""
 			})));
 			setCustomers(customerData.customers.map((c) => ({
 				id: String(c.id),

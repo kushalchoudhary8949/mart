@@ -40,6 +40,8 @@ const OrderTrackingPage = (() => {
       try {
         const [orderRes, trackRes] = await Promise.all([Api.getOrder(params.id), Api.trackOrder(params.id)])
         if (requestId !== activeRequest) return
+        const container = document.getElementById('track-container')
+        if (!container) return
         renderTracking(orderRes.data, trackRes.data, params.id)
         if (['delivered', 'cancelled'].includes(trackRes.data.status)) {
           isTerminal = true
@@ -51,9 +53,12 @@ const OrderTrackingPage = (() => {
       } catch (e) {
         if (requestId !== activeRequest) return
         isTerminal = true
-        document.getElementById('track-container').innerHTML = UI.errorState(
-          'Order not found', Api.errMsg(e), `Router.resolve()`
-        )
+        const container = document.getElementById('track-container')
+        if (container) {
+          container.innerHTML = UI.errorState(
+            'Order not found', Api.errMsg(e), `Router.resolve()`
+          )
+        }
         if (pollInterval) {
           clearInterval(pollInterval)
           pollInterval = null
@@ -80,7 +85,9 @@ const OrderTrackingPage = (() => {
     const isCancelled = trackData.status === 'cancelled'
     const canCancel = !isCancelled && ['placed', 'confirmed', 'preparing'].includes(trackData.status)
 
-    document.getElementById('track-container').innerHTML = `
+    const container = document.getElementById('track-container')
+    if (!container) return
+    container.innerHTML = `
       <div class="bg-white border border-gray-100 rounded-2xl p-4 mb-4">
         <div class="flex items-center justify-between mb-1">
           <p class="font-bold text-gray-800">Order #${order.order_no}</p>

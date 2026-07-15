@@ -1,5 +1,5 @@
 import { c as require_jsx_runtime } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-import { a as useStore, r as formatINR } from "./store-context-U7u2jc_A.mjs";
+import { a as useStore, r as formatINR } from "./store-context-91WXZWxM.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
 import { S as IndianRupee, _ as PackageX, c as ShoppingCart, n as Users } from "../_libs/lucide-react.mjs";
 import { i as CardTitle, n as CardContent, r as CardHeader, t as Card } from "./card-BXjpJ96D.mjs";
@@ -7,7 +7,7 @@ import { t as Badge } from "./badge-D1Dupn2y.mjs";
 import { a as TableHeader, i as TableHead, n as TableBody, o as TableRow, r as TableCell, t as Table } from "./table-C0WYWEQX.mjs";
 import { t as StatCard } from "./StatCard-CwGDFElW.mjs";
 import { g as Link } from "../_libs/@tanstack/react-router+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CKJ3WxW3.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DfxTKP2n.js
 var import_jsx_runtime = require_jsx_runtime();
 var statusLabel = {
 	pending: "Pending",
@@ -29,7 +29,8 @@ var statusVariant = {
 };
 function Dashboard() {
 	const { orders, products, customers } = useStore();
-	const todayOrders = orders.filter((o) => o.date === "2026-07-12");
+	const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+	const todayOrders = orders.filter((o) => o.date === todayStr);
 	const todayRevenue = todayOrders.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.total, 0);
 	const lowStock = products.filter((p) => p.stock <= p.lowStockThreshold);
 	const pendingCount = orders.filter((o) => [

@@ -153,6 +153,8 @@ interface StoreState {
   toggleOffer: (id: string) => void;
   deleteOffer: (id: string) => void;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
+  sendNotification: (userId: string, title: string, message: string, type?: string) => Promise<void>;
+  broadcastOffer: (id: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -174,7 +176,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCategories(categoryData.categories.map((c: any) => ({ id: String(c.id), name: c.name, emoji: c.icon ?? "🏷️", description: c.slug })));
       setProducts(productData.products.map((p: any) => ({ id: String(p.id), name: p.name, emoji: "📦", categoryId: String(p.category_id), unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock, lowStockThreshold: p.low_stock_threshold ?? 10, active: Boolean(p.is_active) })));
       setOffers(offerData.offers.map((o: any) => ({ id: String(o.id), title: o.name, code: o.code ?? "", type: o.type === "FLAT" ? "flat" : "percent", value: o.value, minOrder: o.minCartValue ?? 0, validTill: o.endDate, active: o.isActive })));
-      setOrders(orderData.orders.map((o: any) => ({ id: String(o.id), customerName: o.user?.name ?? o.user?.phone ?? "Customer", items: o.items?.length ?? 0, total: o.total, status: o.status.toLowerCase(), payment: o.paymentMethod, date: o.placedAt })));
+      setOrders(orderData.orders.map((o: any) => ({ id: String(o.id), customerName: o.user?.name ?? o.user?.phone ?? "Customer", items: o.items?.length ?? 0, total: o.total, status: o.status.toLowerCase(), payment: o.paymentMethod, date: o.placedAt ? o.placedAt.split('T')[0] : "" })));
       setCustomers(customerData.customers.map((c: any) => ({ id: String(c.id), name: c.name ?? "Customer", phone: c.phone, email: c.email ?? "", orders: c.orders, totalSpent: c.totalSpent, joined: c.createdAt })));
     } catch { /* Login and local development may not have the API available yet. */ }
   };
@@ -211,6 +213,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     toggleOffer: (id) => { const offer = offers.find((o) => o.id === id); if (offer) void api(`/admin/offers/${id}`, { method: "PUT", body: JSON.stringify({ is_active: !offer.active }) }).then(load); },
     deleteOffer: (id) => { void api(`/admin/offers/${id}`, { method: "DELETE" }).then(load); },
     updateOrderStatus: (id, status) => { void api(`/admin/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status: status.toUpperCase() }) }).then(load); },
+    sendNotification: async (userId, title, message, type = 'promo') => {
+      await api("/admin/notifications", {
+        method: "POST",
+        body: JSON.stringify({ userId: Number(userId), title, message, type })
+      });
+    },
+    broadcastOffer: async (id) => {
+      await api(`/admin/offers/${id}/broadcast`, { method: "POST" });
+    },
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

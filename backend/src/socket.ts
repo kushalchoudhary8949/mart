@@ -6,7 +6,15 @@ import { config } from './config';
 let io: Server | undefined;
 
 export function initializeSocket(server: HttpServer) {
-  io = new Server(server, { cors: { origin: config.cors.origin, credentials: true } });
+  const allowedOrigins = config.env === 'development'
+    ? (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin) return callback(null, true);
+        const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+        callback(null, config.cors.origin.includes(origin) || isLocalhost);
+      }
+    : config.cors.origin;
+
+  io = new Server(server, { cors: { origin: allowedOrigins as any, credentials: true } });
   io.use((socket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '');
@@ -37,4 +45,8 @@ export function emitOrderEvent(event: string, order: { id: number; userId: numbe
 
 export function emitStockUpdate(product: { id: number; stock: number }) {
   io?.emit('stockUpdated', product);
+}
+
+export function emitNotification(userId: number, notification: unknown) {
+  io?.to(`user:${userId}`).emit('notification', notification);
 }

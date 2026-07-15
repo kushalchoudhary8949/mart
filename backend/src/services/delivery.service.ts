@@ -4,6 +4,7 @@ import * as repo from '../repositories/delivery.repository';
 import { AppError } from '../utils/AppError';
 import { HTTP_STATUS } from '../utils/constants';
 import { emitOrderEvent } from '../socket';
+import { prisma } from '../config/database';
 
 const terminal = new Set<OrderStatus>([OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED]);
 const transitions: Partial<Record<OrderStatus, OrderStatus[]>> = {
@@ -32,6 +33,20 @@ function timestampData(status: OrderStatus) {
 async function partnerFor(userId: number) {
   const partner = await repo.findPartnerByUserId(userId);
   if (!partner || !partner.user.isActive) throw new AppError('Delivery partner profile not found or inactive.', HTTP_STATUS.FORBIDDEN);
+  
+  if (!partner.isAvailable) {
+    const activeCount = await prisma.order.count({
+      where: {
+        deliveryPartnerId: partner.id,
+        status: { notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED] }
+      }
+    });
+    if (activeCount === 0) {
+      await repo.updatePartner(partner.id, { isAvailable: true });
+      return { ...partner, isAvailable: true };
+    }
+  }
+  
   return partner;
 }
 
@@ -62,8 +77,9 @@ export async function acceptOrder(userId: number, orderId: number) {
   const partner = await partnerFor(userId);
   if (!partner.isAvailable || !partner.isOnline) throw new AppError('You must be online and available to accept orders.', HTTP_STATUS.CONFLICT);
   const order = await requireOrder(orderId);
-  if (order.status !== OrderStatus.READY_FOR_PICKUP || order.deliveryPartnerId) throw new AppError('This order is no longer available.', HTTP_STATUS.CONFLICT);
-  const updated = await repo.updateOrderWithHistory(orderId, OrderStatus.READY_FOR_PICKUP, { deliveryPartner: { connect: { id: partner.id } } });
+  const acceptableStatuses: OrderStatus[] = [OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP];
+  if (!acceptableStatuses.includes(order.status) || order.deliveryPartnerId) throw new AppError('This order is no longer available.', HTTP_STATUS.CONFLICT);
+  const updated = await repo.updateOrderWithHistory(orderId, order.status, { deliveryPartner: { connect: { id: partner.id } } });
   await repo.updatePartner(partner.id, { isAvailable: false });
   emitOrderEvent('deliveryAccepted', updated);
   emitOrderEvent('deliveryAssigned', updated);
@@ -107,7 +123,6 @@ export async function updateLocation(userId: number, orderId: number, latitude: 
 
 export async function adminUpdateOrderStatus(orderId: number, status: OrderStatus) {
   const order = await requireOrder(orderId);
-  if (!transitions[order.status]?.includes(status)) throw new AppError(`Cannot change ${order.status} to ${status}.`, HTTP_STATUS.CONFLICT);
   const updated = await repo.updateOrderWithHistory(orderId, status, timestampData(status));
   const event = eventFor(status); if (event) emitOrderEvent(event, updated);
   return updated;
@@ -116,8 +131,9 @@ export async function adminUpdateOrderStatus(orderId: number, status: OrderStatu
 export async function assignPartner(orderId: number, partnerId: number) {
   const order = await requireOrder(orderId); const partner = await repo.findPartnerById(partnerId);
   if (!partner) throw new AppError('Delivery partner not found.', HTTP_STATUS.NOT_FOUND);
-  if (order.status !== OrderStatus.READY_FOR_PICKUP || order.deliveryPartnerId) throw new AppError('Only unassigned ready-for-pickup orders can be assigned.', HTTP_STATUS.CONFLICT);
-  const updated = await repo.updateOrderWithHistory(orderId, OrderStatus.READY_FOR_PICKUP, { deliveryPartner: { connect: { id: partnerId } } });
+  const assignableStatuses: OrderStatus[] = [OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP];
+  if (!assignableStatuses.includes(order.status) || order.deliveryPartnerId) throw new AppError('Only unassigned confirmed orders can be assigned.', HTTP_STATUS.CONFLICT);
+  const updated = await repo.updateOrderWithHistory(orderId, order.status, { deliveryPartner: { connect: { id: partnerId } } });
   await repo.updatePartner(partnerId, { isAvailable: false }); emitOrderEvent('deliveryAssigned', updated); return updated;
 }
 

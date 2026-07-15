@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-6cqMJy_I.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-CLRU8n7v.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/__root.tsx",
@@ -15,7 +15,7 @@ var tsrStartManifest = () => ({ routes: {
 			"/sitemap.xml"
 		],
 		preloads: [
-			"/assets/index-Q-TpJ2J6.js",
+			"/assets/index-BfW75Z_J.js",
 			"/assets/utils-8gOzUdrg.js",
 			"/assets/react-dom-zxTq3OiM.js",
 			"/assets/dist-DJy6JV99.js",
@@ -24,14 +24,14 @@ var tsrStartManifest = () => ({ routes: {
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-Q-TpJ2J6.js"
+			src: "/assets/index-BfW75Z_J.js"
 		} }]
 	},
 	"/": {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/index.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/routes-CBa8g15Q.js",
+			"/assets/routes-B_OaoKvA.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/badge-B94GrHeH.js",
 			"/assets/table-D4z4yw1_.js",
@@ -42,10 +42,10 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/categories.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/categories-CzfCsHID.js",
+			"/assets/categories-AA9Rs1nT.js",
 			"/assets/pencil-CGvLwUou.js",
 			"/assets/plus-BKDNg88D.js",
-			"/assets/dialog-Du2SJ9Zm.js",
+			"/assets/dialog-CyegCIde.js",
 			"/assets/card-BNvBr7N9.js"
 		]
 	},
@@ -53,7 +53,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/customers.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/customers-CfWNVwZa.js",
+			"/assets/customers-B1_3hg1j.js",
 			"/assets/search-CNVzandk.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/badge-B94GrHeH.js",
@@ -64,7 +64,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/delivery-partners.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/delivery-partners-Hd78iRyw.js",
+			"/assets/delivery-partners-CLoIT8Ci.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/badge-B94GrHeH.js"
 		]
@@ -73,62 +73,62 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/inventory.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/inventory-By53a6Vh.js",
+			"/assets/inventory-Dmv4QBtk.js",
 			"/assets/plus-BKDNg88D.js",
 			"/assets/search-CNVzandk.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/badge-B94GrHeH.js",
 			"/assets/table-D4z4yw1_.js",
-			"/assets/tabs-Cu0Gwr9k.js"
+			"/assets/tabs-B_XvF1eb.js"
 		]
 	},
 	"/offers": {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/offers.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/offers-ByxFnfAU.js",
-			"/assets/select-D9zrmX45.js",
+			"/assets/offers-Cy4lrxMZ.js",
+			"/assets/select-DzU1T5F0.js",
 			"/assets/plus-BKDNg88D.js",
-			"/assets/dialog-Du2SJ9Zm.js",
+			"/assets/dialog-CyegCIde.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/badge-B94GrHeH.js",
-			"/assets/switch-tZJiRqYO.js"
+			"/assets/switch-BBIWk6ky.js"
 		]
 	},
 	"/orders": {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/orders.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/orders-DN9fN1Wl.js",
-			"/assets/select-D9zrmX45.js",
+			"/assets/orders-BOKn5q-C.js",
+			"/assets/select-DzU1T5F0.js",
 			"/assets/search-CNVzandk.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/badge-B94GrHeH.js",
 			"/assets/table-D4z4yw1_.js",
-			"/assets/tabs-Cu0Gwr9k.js"
+			"/assets/tabs-B_XvF1eb.js"
 		]
 	},
 	"/products": {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/products.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/products-CtsHxp4x.js",
-			"/assets/select-D9zrmX45.js",
+			"/assets/products-B3BYoX8v.js",
+			"/assets/select-DzU1T5F0.js",
 			"/assets/pencil-CGvLwUou.js",
 			"/assets/plus-BKDNg88D.js",
 			"/assets/search-CNVzandk.js",
-			"/assets/dialog-Du2SJ9Zm.js",
+			"/assets/dialog-CyegCIde.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/badge-B94GrHeH.js",
 			"/assets/table-D4z4yw1_.js",
-			"/assets/switch-tZJiRqYO.js"
+			"/assets/switch-BBIWk6ky.js"
 		]
 	},
 	"/reports": {
 		filePath: "/Users/kushal/vrindawan mart /mart/lovable frontend/src/routes/reports.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/reports-Bi6v7FHC.js",
+			"/assets/reports-DhoTTmQE.js",
 			"/assets/card-BNvBr7N9.js",
 			"/assets/table-D4z4yw1_.js",
 			"/assets/StatCard-Bz_73RJc.js"

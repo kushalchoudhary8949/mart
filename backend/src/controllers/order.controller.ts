@@ -9,12 +9,29 @@ import { emitOrderEvent, emitStockUpdate } from '../socket';
 
 const terminal = new Set<OrderStatus>([OrderStatus.CANCELLED, OrderStatus.DELIVERED, OrderStatus.FAILED, OrderStatus.RETURNED]);
 const statusNames: Record<OrderStatus, string> = { PENDING: 'placed', ACCEPTED: 'confirmed', PACKING: 'preparing', READY_FOR_PICKUP: 'preparing', OUT_FOR_DELIVERY: 'out_for_delivery', DELIVERED: 'delivered', CANCELLED: 'cancelled', FAILED: 'failed', RETURNED: 'returned' };
+const statusLabels: Record<string, string> = { placed: 'Placed', confirmed: 'Confirmed', preparing: 'Preparing', out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled', failed: 'Failed', returned: 'Returned' };
 const orderInclude = { items: true, history: { orderBy: { createdAt: 'asc' as const } }, user: { select: { name: true, phone: true } }, deliveryPartner: { include: { user: { select: { id: true, name: true, phone: true } } } } } satisfies Prisma.OrderInclude;
-const mapOrder = (order: Prisma.OrderGetPayload<{ include: typeof orderInclude }>) => ({ order: { ...order, order_no: order.orderNo, address_text: order.addressText, delivery_fee: order.deliveryFee, coupon_code: order.couponCode, placed_at: order.placedAt }, items: order.items });
+const mapOrder = (order: Prisma.OrderGetPayload<{ include: typeof orderInclude }>) => {
+  const currentStatus = statusNames[order.status];
+  return {
+    order: {
+      ...order,
+      order_no: order.orderNo,
+      address_text: order.addressText,
+      delivery_fee: order.deliveryFee,
+      coupon_code: order.couponCode,
+      placed_at: order.placedAt,
+      current_status: currentStatus,
+      current_status_label: statusLabels[currentStatus] || currentStatus,
+      item_count: order.items.length,
+    },
+    items: order.items,
+  };
+};
 
 export const checkout = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const { address_id, address_text, coupon_code, payment_method = 'COD' } = req.body;
+  const { address_id, address_text, coupon_code, payment_method = 'COD', payment_status = 'PENDING' } = req.body;
   const result = await prisma.$transaction(async (tx) => {
     const cart = await tx.cartItem.findMany({ where: { userId }, include: { product: true } });
     if (!cart.length) throw new AppError('Your cart is empty.', HTTP_STATUS.BAD_REQUEST);
@@ -26,7 +43,7 @@ export const checkout = catchAsync(async (req: Request, res: Response) => {
     let discount = 0; let offerId: number | undefined;
     if (coupon_code) { const coupon = await validateCouponCode(coupon_code, subtotal); discount = coupon.discount; offerId = coupon.offer.id; }
     const deliveryFee = subtotal - discount >= 499 ? 0 : 25;
-    const order = await tx.order.create({ data: { orderNo: `VM${Date.now()}${Math.floor(Math.random() * 1000)}`, userId, subtotal, discount, deliveryFee, total: subtotal - discount + deliveryFee, couponCode: coupon_code?.trim().toUpperCase() || null, paymentMethod: String(payment_method).toUpperCase(), addressText, items: { create: cart.map(({ product, productId, quantity }) => ({ productId, name: product.name, image: product.thumbnail, unit: product.unit, price: product.price, quantity })) }, history: { create: { status: OrderStatus.PENDING, note: 'Order placed' } } }, include: orderInclude });
+    const order = await tx.order.create({ data: { orderNo: `VM${Date.now()}${Math.floor(Math.random() * 1000)}`, userId, subtotal, discount, deliveryFee, total: subtotal - discount + deliveryFee, couponCode: coupon_code?.trim().toUpperCase() || null, paymentMethod: String(payment_method).toUpperCase(), paymentStatus: String(payment_status).toUpperCase() as any, addressText, items: { create: cart.map(({ product, productId, quantity }) => ({ productId, name: product.name, image: product.thumbnail, unit: product.unit, price: product.price, quantity })) }, history: { create: { status: OrderStatus.PENDING, note: 'Order placed' } } }, include: orderInclude });
     for (const item of cart) {
       const updated = await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
       await tx.inventoryHistory.create({ data: { productId: item.productId, previousQuantity: item.product.stock, updatedQuantity: updated.stock, difference: -item.quantity, reason: `Order ${order.orderNo}`, adminUserId: userId } });
@@ -42,8 +59,15 @@ export const checkout = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getOrders = catchAsync(async (req: Request, res: Response) => {
-  const orders = await prisma.order.findMany({ where: { userId: req.user!.id }, include: orderInclude, orderBy: { placedAt: 'desc' } });
-  res.status(HTTP_STATUS.OK).json({ success: true, data: { orders: orders.map((order) => mapOrder(order).order) } });
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
+  const skip = (page - 1) * limit;
+  const where = { userId: req.user!.id };
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({ where, include: orderInclude, orderBy: { placedAt: 'desc' }, skip, take: limit }),
+    prisma.order.count({ where }),
+  ]);
+  res.status(HTTP_STATUS.OK).json({ success: true, data: { orders: orders.map((order) => mapOrder(order).order), pagination: { page, limit, total, total_pages: Math.ceil(total / limit) } } });
 });
 async function ownedOrder(id: number, userId: number) { const order = await prisma.order.findFirst({ where: { id, userId }, include: orderInclude }); if (!order) throw new AppError('Order not found.', HTTP_STATUS.NOT_FOUND); return order; }
 export const getOrder = catchAsync(async (req: Request, res: Response) => res.status(HTTP_STATUS.OK).json({ success: true, data: mapOrder(await ownedOrder(Number(req.params.id), req.user!.id)) }));
