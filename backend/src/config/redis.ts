@@ -9,8 +9,7 @@ try {
     host: config.redis.host,
     port: config.redis.port,
     password: config.redis.password,
-
-    tls: {},
+    ...(config.env === 'production' ? { tls: {} } : {}),
 
     maxRetriesPerRequest: 3,
     retryStrategy(times) {
