@@ -31,8 +31,18 @@ app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      const allowed = new Set([...config.cors.origin, 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5175']);
-      const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+
+      const allowed = new Set([
+        ...config.cors.origin,
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:5175',
+      ]);
+
+      const isLocalhost =
+        origin.startsWith('http://localhost:') ||
+        origin.startsWith('http://127.0.0.1:');
+
       callback(null, allowed.has(origin) || isLocalhost);
     },
     credentials: true,
@@ -52,6 +62,8 @@ app.use(compression());
 
 // Parse incoming request payloads
 app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -66,7 +78,12 @@ app.use(`/api/${config.apiVersion}`, routes);
 
 // Handle undefined routes (404)
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  next(new AppError(`Can't find ${req.originalUrl} on this server!`, HTTP_STATUS.NOT_FOUND));
+  next(
+    new AppError(
+      `Can't find ${req.originalUrl} on this server!`,
+      HTTP_STATUS.NOT_FOUND
+    )
+  );
 });
 
 // Centralized error handling
