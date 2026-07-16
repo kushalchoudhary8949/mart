@@ -9,14 +9,16 @@ try {
     host: config.redis.host,
     port: config.redis.port,
     password: config.redis.password,
+
+    tls: {},
+
     maxRetriesPerRequest: 3,
     retryStrategy(times) {
       if (times > 3) {
         logger.error('❌ Redis retry connection limit reached.');
-        return null; // Stop retrying
+        return null;
       }
-      const delay = Math.min(times * 100, 2000);
-      return delay;
+      return Math.min(times * 100, 2000);
     },
   });
 
