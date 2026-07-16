@@ -52,7 +52,14 @@ app.use(compression());
 
 // Parse incoming request payloads
 app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+// Root endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'Vrindawan Mart Backend is running 🚀',
+    version: config.apiVersion,
+  });
+});
 
 // Mount routes at versioned path (/api/v1)
 app.use(`/api/${config.apiVersion}`, routes);
