@@ -122,7 +122,7 @@ export async function updateLocation(userId: number, orderId: number, latitude: 
 }
 
 export async function adminUpdateOrderStatus(orderId: number, status: OrderStatus) {
-  const order = await requireOrder(orderId);
+  await requireOrder(orderId);
   const updated = await repo.updateOrderWithHistory(orderId, status, timestampData(status));
   const event = eventFor(status); if (event) emitOrderEvent(event, updated);
   return updated;

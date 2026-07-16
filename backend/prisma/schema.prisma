@@ -1,64 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-enum Role {
-  CUSTOMER
-  ADMIN
-  DELIVERY_PARTNER
-}
-
-enum OrderStatus {
-  PENDING
-  ACCEPTED
-  PACKING
-  READY_FOR_PICKUP
-  OUT_FOR_DELIVERY
-  DELIVERED
-  CANCELLED
-  FAILED
-  RETURNED
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum OfferType {
-  PERCENTAGE
-  FLAT
-  BUY_X_GET_Y
-}
-
 model User {
   id                   Int                @id @default(autoincrement())
   phone                String             @unique
-  name                 String?
-  email                String?
-  passwordHash         String?            @map("password_hash")
   role                 Role               @default(CUSTOMER)
-  isVerified           Boolean            @default(false) @map("is_verified")
-  isBlocked            Boolean            @default(false) @map("is_blocked")
-  isActive             Boolean            @default(true) @map("is_active")
-  lastLogin            DateTime?          @map("last_login")
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
-  refreshTokens        RefreshToken[]
+  isBlocked            Boolean            @default(false) @map("is_blocked")
+  isVerified           Boolean            @default(false) @map("is_verified")
+  email                String?
+  isActive             Boolean            @default(true) @map("is_active")
+  lastLogin            DateTime?          @map("last_login")
+  name                 String?
+  passwordHash         String?            @map("password_hash")
   addresses            Address[]
-  orders               Order[]
-  wishlist             WishlistItem[]
   cart                 CartItem[]
-  notifications        Notification[]
-  inventoryAdjustments InventoryHistory[] @relation("AdminAdjustments")
   deliveryPartner      DeliveryPartner?
+  inventoryAdjustments InventoryHistory[] @relation("AdminAdjustments")
+  notifications        Notification[]
+  orders               Order[]
+  refreshTokens        RefreshToken[]
+  wishlist             WishlistItem[]
 
   @@map("users")
 }
@@ -90,57 +59,57 @@ model RefreshToken {
 }
 
 model Category {
-  id             Int             @id @default(autoincrement())
-  parentId       Int?            @map("parent_id")
-  name           String
-  slug           String          @unique
-  icon           String?
-  image          String?
-  sortOrder      Int             @default(0) @map("sort_order")
-  isActive       Boolean         @default(true) @map("is_active")
-  parent         Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  subCategories  Category[]      @relation("CategoryHierarchy")
-  products       Product[]
-  offers         CategoryOffer[]
+  id            Int             @id @default(autoincrement())
+  name          String
+  slug          String          @unique
+  icon          String?
+  image         String?
+  sortOrder     Int             @default(0) @map("sort_order")
+  isActive      Boolean         @default(true) @map("is_active")
+  parentId      Int?            @map("parent_id")
+  parent        Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  subCategories Category[]      @relation("CategoryHierarchy")
+  offers        CategoryOffer[]
+  products      Product[]
 
   @@map("categories")
 }
 
 model Product {
-  id                Int            @id @default(autoincrement())
-  categoryId        Int            @map("category_id")
+  id                Int                @id @default(autoincrement())
+  categoryId        Int                @map("category_id")
   name              String
-  slug              String         @unique
+  slug              String             @unique
   description       String?
-  shortDescription  String?        @map("short_description")
-  brand             String?
-  sku               String?        @unique
-  barcode           String?        @unique
-  thumbnail         String?
-  unit              String
-  weight            Float?
-  quantity          Float?
   price             Float
   mrp               Float
-  costPrice         Float?         @map("cost_price")
-  gst               Float          @default(0)
-  stock             Int            @default(100)
-  lowStockThreshold Int            @default(10) @map("low_stock_threshold")
-  rating            Float          @default(4.3)
-  ratingCount       Int            @default(0) @map("rating_count")
-  isFeatured        Boolean        @default(false) @map("is_featured")
-  isBestseller      Boolean        @default(false) @map("is_bestseller")
-  isActive          Boolean        @default(true) @map("is_active")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
-  deletedAt         DateTime?      @map("deleted_at")
-  category          Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  unit              String
+  thumbnail         String?
+  stock             Int                @default(100)
+  rating            Float              @default(4.3)
+  ratingCount       Int                @default(0) @map("rating_count")
+  isFeatured        Boolean            @default(false) @map("is_featured")
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  barcode           String?            @unique
+  brand             String?
+  costPrice         Float?             @map("cost_price")
+  deletedAt         DateTime?          @map("deleted_at")
+  gst               Float              @default(0)
+  isBestseller      Boolean            @default(false) @map("is_bestseller")
+  lowStockThreshold Int                @default(10) @map("low_stock_threshold")
+  quantity          Float?
+  shortDescription  String?            @map("short_description")
+  sku               String?            @unique
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  weight            Float?
+  cartItems         CartItem[]
+  inventoryHistory  InventoryHistory[]
+  orderItems        OrderItem[]
   images            ProductImage[]
   offers            ProductOffer[]
-  cartItems         CartItem[]
+  category          Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   wishlistItems     WishlistItem[]
-  orderItems        OrderItem[]
-  inventoryHistory  InventoryHistory[]
 
   @@index([categoryId])
   @@index([isFeatured])
@@ -176,15 +145,15 @@ model Banner {
 }
 
 model Address {
-  id           Int      @id @default(autoincrement())
-  userId       Int      @map("user_id")
-  label        String   @default("Home")
-  fullAddress  String   @map("full_address")
-  lat          Float?
-  lng          Float?
-  isDefault    Boolean  @default(false) @map("is_default")
-  createdAt    DateTime @default(now()) @map("created_at")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  label       String   @default("Home")
+  fullAddress String   @map("full_address")
+  lat         Float?
+  lng         Float?
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("addresses")
 }
@@ -195,8 +164,8 @@ model CartItem {
   productId Int      @map("product_id")
   quantity  Int      @default(1)
   createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@map("cart_items")
@@ -207,44 +176,43 @@ model WishlistItem {
   userId    Int      @map("user_id")
   productId Int      @map("product_id")
   createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@map("wishlist_items")
 }
 
 model Order {
-  id              Int                  @id @default(autoincrement())
-  orderNo         String               @unique @map("order_no")
-  userId          Int                  @map("user_id")
-  status          OrderStatus          @default(PENDING)
-  subtotal        Float
-  discount        Float                @default(0)
-  deliveryFee     Float                @default(0) @map("delivery_fee")
-  total           Float
-  couponCode      String?              @map("coupon_code")
-  paymentMethod   String               @default("COD") @map("payment_method")
-  paymentStatus   PaymentStatus        @default(PENDING) @map("payment_status")
-  addressText     String               @map("address_text")
-  deliveryPartnerId Int?               @map("delivery_partner_id")
-  etaMinutes      Int                  @default(30) @map("eta_minutes")
-  placedAt        DateTime             @default(now()) @map("placed_at")
-  acceptedAt      DateTime?            @map("accepted_at")
-  packedAt        DateTime?            @map("packed_at")
-  readyForPickupAt DateTime?           @map("ready_for_pickup_at")
-  pickedUpAt      DateTime?            @map("picked_up_at")
-  outForDeliveryAt DateTime?           @map("out_for_delivery_at")
-  deliveredAt     DateTime?            @map("delivered_at")
-  cancelledAt     DateTime?            @map("cancelled_at")
-  rating          Int?
-  review          String?
-  updatedAt       DateTime             @updatedAt @map("updated_at")
-
-  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
-  items   OrderItem[]
-  history OrderStatusHistory[]
+  id                Int                  @id @default(autoincrement())
+  orderNo           String               @unique @map("order_no")
+  userId            Int                  @map("user_id")
+  status            OrderStatus          @default(PENDING)
+  subtotal          Float
+  discount          Float                @default(0)
+  deliveryFee       Float                @default(0) @map("delivery_fee")
+  total             Float
+  couponCode        String?              @map("coupon_code")
+  paymentMethod     String               @default("COD") @map("payment_method")
+  paymentStatus     PaymentStatus        @default(PENDING) @map("payment_status")
+  addressText       String               @map("address_text")
+  deliveryPartnerId Int?                 @map("delivery_partner_id")
+  etaMinutes        Int                  @default(30) @map("eta_minutes")
+  placedAt          DateTime             @default(now()) @map("placed_at")
+  acceptedAt        DateTime?            @map("accepted_at")
+  packedAt          DateTime?            @map("packed_at")
+  readyForPickupAt  DateTime?            @map("ready_for_pickup_at")
+  pickedUpAt        DateTime?            @map("picked_up_at")
+  outForDeliveryAt  DateTime?            @map("out_for_delivery_at")
+  deliveredAt       DateTime?            @map("delivered_at")
+  cancelledAt       DateTime?            @map("cancelled_at")
+  rating            Int?
+  review            String?
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+  items             OrderItem[]
+  history           OrderStatusHistory[]
+  deliveryPartner   DeliveryPartner?     @relation(fields: [deliveryPartnerId], references: [id])
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([deliveryPartnerId, status])
@@ -253,21 +221,21 @@ model Order {
 }
 
 model DeliveryPartner {
-  id               Int       @id @default(autoincrement())
-  userId           Int       @unique @map("user_id")
-  phone            String    @unique
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique @map("user_id")
+  phone            String   @unique
   name             String
-  vehicleType      String    @map("vehicle_type")
-  vehicleNumber    String    @map("vehicle_number")
-  profileImage     String?   @map("profile_image")
-  rating           Float     @default(5)
-  isOnline         Boolean   @default(false) @map("is_online")
-  isAvailable      Boolean   @default(true) @map("is_available")
-  currentLatitude  Float?    @map("current_latitude")
-  currentLongitude Float?    @map("current_longitude")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType      String   @map("vehicle_type")
+  vehicleNumber    String   @map("vehicle_number")
+  profileImage     String?  @map("profile_image")
+  rating           Float    @default(5)
+  isOnline         Boolean  @default(false) @map("is_online")
+  isAvailable      Boolean  @default(true) @map("is_available")
+  currentLatitude  Float?   @map("current_latitude")
+  currentLongitude Float?   @map("current_longitude")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders           Order[]
 
   @@index([isOnline, isAvailable])
@@ -275,17 +243,16 @@ model DeliveryPartner {
 }
 
 model OrderItem {
-  id        Int     @id @default(autoincrement())
-  orderId   Int     @map("order_id")
-  productId Int?    @map("product_id")
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @map("order_id")
+  productId Int?     @map("product_id")
   name      String
   image     String?
   unit      String?
   price     Float
   quantity  Int
-
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@map("order_items")
@@ -297,8 +264,7 @@ model OrderStatusHistory {
   status    OrderStatus
   note      String?
   createdAt DateTime    @default(now()) @map("created_at")
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_status_history")
 }
@@ -308,7 +274,7 @@ model Notification {
   userId    Int      @map("user_id")
   title     String
   message   String
-  type      String   @default("order") // order, promo, system
+  type      String   @default("order")
   orderId   Int?     @map("order_id")
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
@@ -326,9 +292,8 @@ model InventoryHistory {
   reason           String
   adminUserId      Int      @map("admin_user_id")
   createdAt        DateTime @default(now()) @map("created_at")
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  admin   User    @relation("AdminAdjustments", fields: [adminUserId], references: [id], onDelete: Cascade)
+  admin            User     @relation("AdminAdjustments", fields: [adminUserId], references: [id], onDelete: Cascade)
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("inventory_history")
 }
@@ -349,8 +314,8 @@ model Offer {
   isActive     Boolean         @default(true) @map("is_active")
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
-  products     ProductOffer[]
   categories   CategoryOffer[]
+  products     ProductOffer[]
 
   @@map("offers")
 }
@@ -358,8 +323,8 @@ model Offer {
 model ProductOffer {
   productId Int     @map("product_id")
   offerId   Int     @map("offer_id")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   offer     Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@id([productId, offerId])
   @@map("product_offers")
@@ -373,4 +338,35 @@ model CategoryOffer {
 
   @@id([categoryId, offerId])
   @@map("category_offers")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  DELIVERY_PARTNER
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PACKING
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  FAILED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OfferType {
+  PERCENTAGE
+  FLAT
+  BUY_X_GET_Y
 }
