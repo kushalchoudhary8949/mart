@@ -6,13 +6,17 @@ import { config } from './config';
 let io: Server | undefined;
 
 export function initializeSocket(server: HttpServer) {
-  const allowedOrigins = config.env === 'development'
-    ? (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        if (!origin) return callback(null, true);
-        const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
-        callback(null, config.cors.origin.includes(origin) || isLocalhost);
-      }
-    : config.cors.origin;
+  const allowedOrigins = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return callback(null, true);
+    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+    const allowed = new Set([
+      ...config.cors.origin,
+      'https://vrindawan-mart.pages.dev',
+      'https://mart-delta-hazel.vercel.app',
+      'https://mart-vklv.vercel.app',
+    ]);
+    callback(null, allowed.has(origin) || isLocalhost);
+  };
 
   io = new Server(server, { cors: { origin: allowedOrigins as any, credentials: true } });
   io.use((socket, next) => {

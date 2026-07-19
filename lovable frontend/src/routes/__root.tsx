@@ -160,7 +160,10 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   const login = async (event: FormEvent) => {
     event.preventDefault(); setError("");
     try {
-      const response = await fetch("http://localhost:5001/api/v1/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, password }) });
+      const baseUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+        ? "http://localhost:5001"
+        : "https://vrindawan-mart-redis.onrender.com";
+      const response = await fetch(`${baseUrl}/api/v1/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, password }) });
       const body = await response.json(); if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? "Admin credentials are required.");
       localStorage.setItem("admin_token", body.data.accessToken); onLogin();
     } catch (err) { setError(err instanceof Error ? err.message : "Unable to sign in."); }

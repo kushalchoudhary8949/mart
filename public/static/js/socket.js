@@ -3,7 +3,10 @@ const Realtime = (() => {
   let socket = null
   function connect() {
     if (socket || !window.io || !Api.getToken()) return
-    socket = window.io('http://localhost:5001', { auth: { token: Api.getToken() } })
+    const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5001'
+      : 'https://vrindawan-mart-redis.onrender.com'
+    socket = window.io(socketUrl, { auth: { token: Api.getToken() } })
     socket.on('stockUpdated', () => Router.resolve())
     socket.on('notification', (payload) => {
       UI.toast(payload.title || "New notification!", 'info')

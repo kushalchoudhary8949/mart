@@ -167,7 +167,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const api = async (path: string, init?: RequestInit) => {
     const token = typeof window === "undefined" ? null : localStorage.getItem("admin_token");
-    const response = await fetch(`http://localhost:5001/api/v1${path}`, { ...init, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers } });
+    const baseUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+      ? "http://localhost:5001"
+      : "https://vrindawan-mart-redis.onrender.com";
+    const response = await fetch(`${baseUrl}/api/v1${path}`, { ...init, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers } });
     const body = await response.json(); if (!response.ok) throw new Error(body.message ?? "Request failed"); return body.data;
   };
   const load = async () => {
@@ -185,7 +188,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     load();
     const connect = () => {
       const io = (window as Window & { io?: (url: string, options: unknown) => { onAny: (listener: () => void) => void; disconnect: () => void } }).io;
-      return io?.("http://localhost:5001", { auth: { token: localStorage.getItem("admin_token") } });
+      const socketUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+        ? "http://localhost:5001"
+        : "https://vrindawan-mart-redis.onrender.com";
+      return io?.(socketUrl, { auth: { token: localStorage.getItem("admin_token") } });
     };
     let socket = connect();
     let script: HTMLScriptElement | undefined;

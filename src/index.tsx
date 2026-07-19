@@ -18,7 +18,10 @@ const app = new Hono<AppEnv>()
 app.use('/api/*', cors())
 
 app.all('/api/*', async (c) => {
-  const backend = c.env?.BACKEND_URL || 'http://localhost:5001'
+  const backend = c.env?.BACKEND_URL || 
+    (new URL(c.req.url).hostname === 'localhost' || new URL(c.req.url).hostname === '127.0.0.1'
+      ? 'http://localhost:5001'
+      : 'https://vrindawan-mart-redis.onrender.com')
   const target = `${backend}/api/v1${c.req.path.slice(4)}${new URL(c.req.url).search}`
   const headers = new Headers(c.req.raw.headers)
   headers.delete('host')

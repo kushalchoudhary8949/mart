@@ -37,6 +37,9 @@ app.use(
         'http://localhost:3000',
         'http://localhost:5173',
         'http://localhost:5175',
+        'https://vrindawan-mart.pages.dev',
+        'https://mart-delta-hazel.vercel.app',
+        'https://mart-vklv.vercel.app',
       ]);
 
       const isLocalhost =

@@ -6,6 +6,7 @@ import { prisma, testDbConnection } from './config/database';
 import { redis } from './config/redis';
 import { initializeSocket } from './socket';
 
+
 const server = http.createServer(app);
 initializeSocket(server);
 
