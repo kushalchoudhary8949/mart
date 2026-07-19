@@ -25,6 +25,13 @@ app.all('/api/*', async (c) => {
   const target = `${backend}/api/v1${c.req.path.slice(4)}${new URL(c.req.url).search}`
   const headers = new Headers(c.req.raw.headers)
   headers.delete('host')
+  
+  // Strip Cloudflare internal headers to prevent Cloudflare from blocking the proxied request
+  for (const key of Array.from(headers.keys())) {
+    if (key.toLowerCase().startsWith('cf-')) {
+      headers.delete(key);
+    }
+  }
   const response = await fetch(target, { method: c.req.method, headers, body: ['GET', 'HEAD'].includes(c.req.method) ? undefined : c.req.raw.body, duplex: 'half' as never })
   
   // Clone backend headers and strip compression/hop-by-hop connection headers
