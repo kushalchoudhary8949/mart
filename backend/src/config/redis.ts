@@ -99,6 +99,7 @@ const fallback = new InMemoryRedisFallback();
 try {
   const redisOptions = {
     maxRetriesPerRequest: 3,
+    lazyConnect: true, // Connect manually to handle authentication rejections safely
     retryStrategy(times: number) {
       if (times > 3) {
         logger.error('❌ Redis retry connection limit reached. Using In-Memory fallback.');
@@ -142,7 +143,12 @@ try {
   });
 
   redisInstance.on('error', (err) => {
-    logger.error('❌ Redis error:', err);
+    logger.error('❌ Redis error:', err.message);
+  });
+
+  // Explicitly trigger lazy connection and handle authentication rejections cleanly
+  redisInstance.connect().catch((err) => {
+    logger.error('❌ Redis connection failed during initialization:', err.message);
   });
 } catch (error) {
   logger.error('❌ Redis Client Initialization failed, using In-Memory fallback:', error);
@@ -159,10 +165,28 @@ const redisProxy = new Proxy({} as Redis, {
     }
 
     // Redirect Redis commands to in-memory fallback if disconnected
-    if (!isConnected && typeof prop === 'string' && prop in fallback) {
-      const fallbackMethod = (fallback as any)[prop];
-      if (typeof fallbackMethod === 'function') {
-        return fallbackMethod.bind(fallback);
+    if (!isConnected) {
+      if (typeof prop === 'string' && prop in fallback) {
+        const fallbackMethod = (fallback as any)[prop];
+        if (typeof fallbackMethod === 'function') {
+          return fallbackMethod.bind(fallback);
+        }
+      }
+
+      // Return a dummy async function for any other Redis command to prevent ioredis from queueing it
+      if (typeof prop === 'string') {
+        return async (...args: any[]) => {
+          if (prop === 'ping') return 'PONG';
+          if (prop === 'call') {
+            // Support evaluation from rate-limit-redis if it falls back
+            const cmd = args[0];
+            if (cmd === 'eval' || cmd === 'evalsha') {
+              // Redirect to eval method in our fallback
+              return fallback.eval(args[1], Number(args[2]), ...args.slice(3));
+            }
+          }
+          return null;
+        };
       }
     }
 
