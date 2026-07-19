@@ -95,7 +95,8 @@ export const rateLimiter = rateLimit({
     return (req.headers['cf-connecting-ip'] as string) || 
            (req.headers['x-real-ip'] as string) || 
            (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
-           req.ip;
+           req.ip || 
+           '';
   },
   skip: () => config.env === 'development' || config.env === 'test',
   handler: (_req, _res, next) => {
@@ -112,7 +113,8 @@ export const otpRequestLimiter = rateLimit({
     const ip = (req.headers['cf-connecting-ip'] as string) || 
                (req.headers['x-real-ip'] as string) || 
                (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
-               req.ip;
+               req.ip || 
+               '';
     return `${ip}:otp`;
   },
   skip: () => config.env === 'development' || config.env === 'test',
@@ -127,7 +129,8 @@ export const loginAttemptLimiter = rateLimit({
     const ip = (req.headers['cf-connecting-ip'] as string) || 
                (req.headers['x-real-ip'] as string) || 
                (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
-               req.ip;
+               req.ip || 
+               '';
     return `${ip}:login`;
   },
   skip: () => config.env === 'development' || config.env === 'test',
