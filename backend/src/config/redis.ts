@@ -158,7 +158,7 @@ try {
 const redisProxy = new Proxy({} as Redis, {
   get(_target, prop, receiver) {
     if (prop === 'status') {
-      return isConnected ? redisInstance.status : 'ready';
+      return redisInstance ? redisInstance.status : 'close';
     }
     if (prop === 'on' || prop === 'once' || prop === 'off' || prop === 'emit') {
       return redisInstance ? (redisInstance as any)[prop].bind(redisInstance) : (() => {});
