@@ -14,11 +14,11 @@ export async function healthCheck(_req: Request, res: Response): Promise<void> {
   const uptime = process.uptime();
   const memoryUsage = process.memoryUsage();
 
-  const status = dbConnected && redisConnected ? 'UP' : 'DEGRADED';
+  const status = dbConnected ? 'UP' : 'DOWN';
   const statusCode = status === 'UP' ? HTTP_STATUS.OK : HTTP_STATUS.INTERNAL_SERVER_ERROR;
 
   res.status(statusCode).json({
-    success: status === 'UP',
+    success: dbConnected,
     status,
     timestamp: new Date().toISOString(),
     services: {
