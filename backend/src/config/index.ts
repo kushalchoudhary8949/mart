@@ -10,6 +10,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   API_VERSION: z.string().default('v1'),
   DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().optional(),
   REDIS_HOST: z.string().default('127.0.0.1'),
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_PASSWORD: z.string().optional().default(''),
@@ -37,6 +38,7 @@ export const config = {
     url: parsedEnv.data.DATABASE_URL,
   },
   redis: {
+    url: parsedEnv.data.REDIS_URL,
     host: parsedEnv.data.REDIS_HOST,
     port: parsedEnv.data.REDIS_PORT,
     password: parsedEnv.data.REDIS_PASSWORD || undefined,
