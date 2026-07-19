@@ -11,6 +11,7 @@ import { HTTP_STATUS } from './utils/constants';
 import routes from './routes';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Secure Express headers with Helmet
 app.use(
