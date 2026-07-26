@@ -52,6 +52,45 @@ class InMemoryRedisFallback {
     return matched;
   }
 
+  /**
+   * Simulates Redis MULTI/EXEC pipeline.
+   * Returns a chainable builder that queues del/set/get commands
+   * and executes them sequentially when exec() is called.
+   */
+  multi() {
+    const queued: Array<{ method: string; args: any[] }> = [];
+    const parent = this;
+
+    const chain = {
+      del(...keys: string[]) {
+        queued.push({ method: 'del', args: keys });
+        return chain;
+      },
+      set(key: string, value: string, ...args: any[]) {
+        queued.push({ method: 'set', args: [key, value, ...args] });
+        return chain;
+      },
+      get(key: string) {
+        queued.push({ method: 'get', args: [key] });
+        return chain;
+      },
+      async exec() {
+        const results: Array<[Error | null, any]> = [];
+        for (const cmd of queued) {
+          try {
+            const result = await (parent as any)[cmd.method](...cmd.args);
+            results.push([null, result]);
+          } catch (err: any) {
+            results.push([err, null]);
+          }
+        }
+        return results;
+      },
+    };
+
+    return chain;
+  }
+
   async eval(_script: string, numKeys: number, ...args: any[]) {
     const keys = args.slice(0, numKeys);
     const argv = args.slice(numKeys);
@@ -63,11 +102,11 @@ class InMemoryRedisFallback {
     const maxAttempts = Number(argv[1]);
     
     const storedOtp = await this.get(otpKey);
-    if (!storedOtp) return 'EXPIRED';
+    if (!storedOtp) return -1;
     
     if (storedOtp === code) {
       await this.del(otpKey, attemptsKey);
-      return 'VALID';
+      return 0;
     }
     
     const attemptsStr = await this.get(attemptsKey);
@@ -76,11 +115,11 @@ class InMemoryRedisFallback {
     
     if (attempts >= maxAttempts) {
       await this.del(otpKey, attemptsKey);
-      return 'MAX_ATTEMPTS_EXCEEDED';
+      return -2;
     }
     
     await this.set(attemptsKey, String(attempts), 'EX', 300);
-    return 'INVALID';
+    return attempts;
   }
 
   async ping() {
