@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/store-context-ZHfsmobz.js
+//#region node_modules/.nitro/vite/services/ssr/assets/store-context-DO8gCS2Z.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var initialCategories = [
@@ -505,6 +505,7 @@ function StoreProvider({ children }) {
 				...init?.headers
 			}
 		});
+		if (response.status === 429) throw new Error("Rate limit exceeded. Please wait a moment.");
 		if (response.status === 401 && !isRetry && typeof window !== "undefined") {
 			const refreshToken = localStorage.getItem("admin_refresh_token");
 			if (refreshToken) try {
@@ -602,6 +603,11 @@ function StoreProvider({ children }) {
 	(0, import_react.useEffect)(() => {
 		if (typeof window === "undefined" || !localStorage.getItem("admin_token")) return;
 		load();
+		let timer;
+		const debouncedLoad = () => {
+			if (timer) window.clearTimeout(timer);
+			timer = window.setTimeout(load, 2e3);
+		};
 		const connect = () => {
 			const io = window.io;
 			const socketUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "http://localhost:5001" : "https://vrindawan-mart-redis.onrender.com";
@@ -614,13 +620,14 @@ function StoreProvider({ children }) {
 			script.src = "https://cdn.socket.io/4.8.1/socket.io.min.js";
 			script.onload = () => {
 				socket = connect();
-				socket?.onAny(load);
+				socket?.onAny(debouncedLoad);
 			};
 			document.head.appendChild(script);
-		} else socket.onAny(load);
-		const refresh = window.setInterval(load, 15e3);
+		} else socket.onAny(debouncedLoad);
+		const refresh = window.setInterval(load, 45e3);
 		return () => {
 			window.clearInterval(refresh);
+			if (timer) window.clearTimeout(timer);
 			socket?.disconnect();
 			script?.remove();
 		};

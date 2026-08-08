@@ -174,6 +174,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ? "http://localhost:5001"
       : "https://vrindawan-mart-redis.onrender.com";
     const response = await fetch(`${baseUrl}/api/v1${path}`, { ...init, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers } });
+    if (response.status === 429) {
+      throw new Error("Rate limit exceeded. Please wait a moment.");
+    }
     if (response.status === 401 && !isRetry && typeof window !== "undefined") {
       const refreshToken = localStorage.getItem("admin_refresh_token");
       if (refreshToken) {
@@ -212,7 +215,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const message = err instanceof Error ? err.message : "Unable to reach backend";
       console.error("[StoreProvider] API load failed:", message);
       setApiError(message);
-      // On first failure, fall back to initial seed data so the panel is not completely empty
       if (!hasLoadedOnce.current) {
         setCategories(initialCategories);
         setProducts(initialProducts);
@@ -225,6 +227,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined" || !localStorage.getItem("admin_token")) return;
     load();
+    let timer: number | undefined;
+    const debouncedLoad = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(load, 2000);
+    };
     const connect = () => {
       const io = (window as Window & { io?: (url: string, options: unknown) => { onAny: (listener: () => void) => void; disconnect: () => void } }).io;
       const socketUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
@@ -235,10 +242,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let socket = connect();
     let script: HTMLScriptElement | undefined;
     if (!socket) {
-      script = document.createElement("script"); script.src = "https://cdn.socket.io/4.8.1/socket.io.min.js"; script.onload = () => { socket = connect(); socket?.onAny(load); }; document.head.appendChild(script);
-    } else socket.onAny(load);
-    const refresh = window.setInterval(load, 15000);
-    return () => { window.clearInterval(refresh); socket?.disconnect(); script?.remove(); };
+      script = document.createElement("script"); script.src = "https://cdn.socket.io/4.8.1/socket.io.min.js"; script.onload = () => { socket = connect(); socket?.onAny(debouncedLoad); }; document.head.appendChild(script);
+    } else socket.onAny(debouncedLoad);
+    const refresh = window.setInterval(load, 45000);
+    return () => { window.clearInterval(refresh); if (timer) window.clearTimeout(timer); socket?.disconnect(); script?.remove(); };
   }, [load]);
 
   const value: StoreState = {

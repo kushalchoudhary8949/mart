@@ -84,21 +84,26 @@ class LazyRedisStore implements Store {
   }
 }
 
+const getIp = (req: any): string => {
+  const raw =
+    (req.headers['cf-connecting-ip'] as string) ||
+    (req.headers['x-real-ip'] as string) ||
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ||
+    req.ip ||
+    req.socket?.remoteAddress ||
+    '127.0.0.1';
+  return raw || '127.0.0.1';
+};
+
 // Create a rate limiter middleware backed by LazyRedisStore
 export const rateLimiter = rateLimit({
   store: new LazyRedisStore(),
   windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
+  max: Math.max(1000, config.rateLimit.max),
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return (req.headers['cf-connecting-ip'] as string) || 
-           (req.headers['x-real-ip'] as string) || 
-           (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
-           req.ip || 
-           '';
-  },
-  skip: () => config.env === 'development' || config.env === 'test',
+  keyGenerator: (req) => getIp(req),
+  skip: (req) => config.env === 'development' || config.env === 'test' || req.path.includes('/admin/'),
   handler: (_req, _res, next) => {
     next(new AppError('Too many requests, please try again later.', HTTP_STATUS.TOO_MANY_REQUESTS));
   },
@@ -109,14 +114,7 @@ export const otpRequestLimiter = rateLimit({
   store: new LazyRedisStore(),
   windowMs: 15 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => {
-    const ip = (req.headers['cf-connecting-ip'] as string) || 
-               (req.headers['x-real-ip'] as string) || 
-               (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
-               req.ip || 
-               '';
-    return `${ip}:otp`;
-  },
+  keyGenerator: (req) => `${getIp(req)}:otp`,
   skip: () => config.env === 'development' || config.env === 'test',
 });
 
@@ -125,14 +123,7 @@ export const loginAttemptLimiter = rateLimit({
   store: new LazyRedisStore(),
   windowMs: 15 * 60 * 1000,
   max: 10,
-  keyGenerator: (req) => {
-    const ip = (req.headers['cf-connecting-ip'] as string) || 
-               (req.headers['x-real-ip'] as string) || 
-               (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
-               req.ip || 
-               '';
-    return `${ip}:login`;
-  },
+  keyGenerator: (req) => `${getIp(req)}:login`,
   skip: () => config.env === 'development' || config.env === 'test',
 });
 
