@@ -164,7 +164,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
         ? "http://localhost:5001"
         : "https://vrindawan-mart-redis.onrender.com";
       const response = await fetch(`${baseUrl}/api/v1/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, password }) });
-      const body = await response.json(); if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? "Admin credentials are required.");
+      const body = await response.json(); if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? body.error ?? "Admin credentials are required.");
       localStorage.setItem("admin_token", body.data.accessToken);
       if (body.data.refreshToken) localStorage.setItem("admin_refresh_token", body.data.refreshToken);
       onLogin();

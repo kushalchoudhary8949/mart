@@ -14,7 +14,7 @@ import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
 import { t as Root } from "../_libs/radix-ui__react-separator.mjs";
 import { a as Trigger, i as Root3, n as Portal, r as Provider, t as Content2 } from "../_libs/radix-ui__react-tooltip.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-DcACPVCn.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DX97hQ6e.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-Dx2adW2q.css";
@@ -773,7 +773,7 @@ function AdminLogin({ onLogin }) {
 				})
 			});
 			const body = await response.json();
-			if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? "Admin credentials are required.");
+			if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? body.error ?? "Admin credentials are required.");
 			localStorage.setItem("admin_token", body.data.accessToken);
 			if (body.data.refreshToken) localStorage.setItem("admin_refresh_token", body.data.refreshToken);
 			onLogin();

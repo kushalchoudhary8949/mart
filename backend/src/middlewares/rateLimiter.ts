@@ -122,8 +122,8 @@ export const loginAttemptLimiter = rateLimit({
   ...authRateLimitOptions,
   store: new LazyRedisStore(),
   windowMs: 15 * 60 * 1000,
-  max: 10,
-  keyGenerator: (req) => `${getIp(req)}:login`,
+  max: 60,
+  keyGenerator: (req) => `${getIp(req)}:${req.body?.phone || ''}:login`,
   skip: () => config.env === 'development' || config.env === 'test',
 });
 
