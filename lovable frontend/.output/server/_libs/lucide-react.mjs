@@ -139,6 +139,19 @@ var BadgePercent = createLucideIcon("badge-percent", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Bell = createLucideIcon("bell", [["path", {
+	d: "M10.268 21a2 2 0 0 0 3.464 0",
+	key: "vwvbt9"
+}], ["path", {
+	d: "M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326",
+	key: "11g9vi"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Bike = createLucideIcon("bike", [
 	["circle", {
 		cx: "18.5",
@@ -427,6 +440,26 @@ var MapPin = createLucideIcon("map-pin", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Megaphone = createLucideIcon("megaphone", [
+	["path", {
+		d: "M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z",
+		key: "q8bfy3"
+	}],
+	["path", {
+		d: "M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14",
+		key: "1853fq"
+	}],
+	["path", {
+		d: "M8 6v8",
+		key: "15ugcq"
+	}]
+]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Minus = createLucideIcon("minus", [["path", {
 	d: "M5 12h14",
 	key: "1ays0h"
@@ -590,6 +623,19 @@ var Search = createLucideIcon("search", [["path", {
 	cy: "11",
 	r: "8",
 	key: "4ej97u"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Send = createLucideIcon("send", [["path", {
+	d: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
+	key: "1ffxy3"
+}], ["path", {
+	d: "m21.854 2.147-10.94 10.939",
+	key: "12cjpa"
 }]]);
 /**
 * @license lucide-react v0.575.0 - ISC
@@ -768,4 +814,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { BadgePercent as A, ChevronUp as C, CalendarDays as D, ChartColumn as E, Boxes as O, IndianRupee as S, Check as T, PackageX as _, ToggleLeft as a, Leaf as b, ShoppingCart as c, Receipt as d, Plus as f, Package as g, PanelLeft as h, Trash2 as i, Bike as k, ShoppingBag as l, Pencil as m, Users as n, Tags as o, Percent as p, TrendingUp as r, Star as s, X as t, Search as u, Minus as v, ChevronDown as w, LayoutDashboard as x, MapPin as y };
+export { Boxes as A, LayoutDashboard as C, Check as D, ChevronDown as E, Bell as M, BadgePercent as N, ChartColumn as O, Leaf as S, ChevronUp as T, Package as _, ToggleLeft as a, Megaphone as b, ShoppingCart as c, Search as d, Receipt as f, PanelLeft as g, Pencil as h, Trash2 as i, Bike as j, CalendarDays as k, ShoppingBag as l, Percent as m, Users as n, Tags as o, Plus as p, TrendingUp as r, Star as s, X as t, Send as u, PackageX as v, IndianRupee as w, MapPin as x, Minus as y };

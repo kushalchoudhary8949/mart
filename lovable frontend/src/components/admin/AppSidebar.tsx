@@ -89,7 +89,7 @@ export function AppSidebar() {
         {!collapsed && (
           <p className="text-xs text-sidebar-foreground/50">Open · 7 AM – 10 PM</p>
         )}
-        <button className="mt-2 w-full rounded-md border px-2 py-1.5 text-sm" onClick={() => { localStorage.removeItem("admin_token"); window.location.reload(); }}>Logout</button>
+        <button className="mt-2 w-full rounded-md border px-2 py-1.5 text-sm" onClick={() => { localStorage.removeItem("admin_token"); localStorage.removeItem("admin_refresh_token"); window.location.reload(); }}>Logout</button>
       </SidebarFooter>
     </Sidebar>
   );

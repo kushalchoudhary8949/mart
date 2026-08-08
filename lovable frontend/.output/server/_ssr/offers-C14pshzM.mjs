@@ -1,17 +1,17 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-import { a as useStore, r as formatINR } from "./store-context-91WXZWxM.mjs";
+import { a as useStore, r as formatINR } from "./store-context-ZHfsmobz.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
 import { t as Input } from "./input-B8Q2ztVi.mjs";
-import { A as BadgePercent, D as CalendarDays, f as Plus, i as Trash2 } from "../_libs/lucide-react.mjs";
+import { N as BadgePercent, b as Megaphone, i as Trash2, k as CalendarDays, p as Plus } from "../_libs/lucide-react.mjs";
 import { a as DialogTitle, i as DialogHeader, n as DialogContent, o as Label, r as DialogFooter, t as Dialog } from "./dialog-DBHicK12.mjs";
 import { n as CardContent, t as Card } from "./card-BXjpJ96D.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { t as Badge } from "./badge-D1Dupn2y.mjs";
 import { t as Switch } from "./switch-Cn1w-cIH.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-Dg1urBTx.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/offers-CclaOEFy.js
+//#region node_modules/.nitro/vite/services/ssr/assets/offers-C14pshzM.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var emptyForm = {
@@ -24,7 +24,7 @@ var emptyForm = {
 	active: true
 };
 function OffersPage() {
-	const { offers, addOffer, toggleOffer, deleteOffer } = useStore();
+	const { offers, addOffer, toggleOffer, deleteOffer, broadcastOffer } = useStore();
 	const [open, setOpen] = (0, import_react.useState)(false);
 	const [form, setForm] = (0, import_react.useState)(emptyForm);
 	const save = () => {
@@ -74,18 +74,35 @@ function OffersPage() {
 									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BadgePercent, { className: "h-5 w-5" })
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 									className: "flex items-center gap-1",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Switch, {
-										checked: o.active,
-										onCheckedChange: () => toggleOffer(o.id)
-									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-										variant: "ghost",
-										size: "icon",
-										onClick: () => {
-											deleteOffer(o.id);
-											toast.success("Offer deleted");
-										},
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-4 w-4 text-destructive" })
-									})]
+									children: [
+										o.active && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "ghost",
+											size: "icon",
+											onClick: async () => {
+												try {
+													await broadcastOffer(o.id);
+													toast.success(`Broadcasted offer "${o.title}" to customers! 🎉`);
+												} catch (err) {
+													toast.error("Failed to broadcast offer.");
+												}
+											},
+											title: "Tell Customers",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Megaphone, { className: "h-4 w-4 text-brand-600" })
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Switch, {
+											checked: o.active,
+											onCheckedChange: () => toggleOffer(o.id)
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "ghost",
+											size: "icon",
+											onClick: () => {
+												deleteOffer(o.id);
+												toast.success("Offer deleted");
+											},
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-4 w-4 text-destructive" })
+										})
+									]
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {

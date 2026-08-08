@@ -165,7 +165,9 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
         : "https://vrindawan-mart-redis.onrender.com";
       const response = await fetch(`${baseUrl}/api/v1/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, password }) });
       const body = await response.json(); if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? "Admin credentials are required.");
-      localStorage.setItem("admin_token", body.data.accessToken); onLogin();
+      localStorage.setItem("admin_token", body.data.accessToken);
+      if (body.data.refreshToken) localStorage.setItem("admin_refresh_token", body.data.refreshToken);
+      onLogin();
     } catch (err) { setError(err instanceof Error ? err.message : "Unable to sign in."); }
   };
   return <main className="flex min-h-screen items-center justify-center bg-muted p-4"><form onSubmit={login} className="w-full max-w-sm rounded-2xl border bg-card p-8 shadow-xl"><h1 className="font-display text-2xl font-bold">Vrindavan Mart</h1><p className="mb-6 text-sm text-muted-foreground">Admin dashboard</p><label className="mb-4 block text-sm">Phone<input className="mt-1 w-full rounded-md border p-2" value={phone} onChange={(e) => setPhone(e.target.value)} /></label><label className="mb-5 block text-sm">Password<input type="password" className="mt-1 w-full rounded-md border p-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label>{error && <p className="mb-3 text-sm text-destructive">{error}</p>}<button className="w-full rounded-md bg-primary py-2 font-medium text-primary-foreground">Sign in</button></form></main>;

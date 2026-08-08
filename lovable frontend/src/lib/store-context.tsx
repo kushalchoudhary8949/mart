@@ -168,12 +168,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
   const hasLoadedOnce = useRef(false);
-  const api = async (path: string, init?: RequestInit) => {
+  const api = async (path: string, init?: RequestInit, isRetry = false): Promise<any> => {
     const token = typeof window === "undefined" ? null : localStorage.getItem("admin_token");
     const baseUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
       ? "http://localhost:5001"
       : "https://vrindawan-mart-redis.onrender.com";
     const response = await fetch(`${baseUrl}/api/v1${path}`, { ...init, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers } });
+    if (response.status === 401 && !isRetry && typeof window !== "undefined") {
+      const refreshToken = localStorage.getItem("admin_refresh_token");
+      if (refreshToken) {
+        try {
+          const refreshRes = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+          });
+          const refreshBody = await refreshRes.json();
+          if (refreshRes.ok && refreshBody.data?.accessToken) {
+            localStorage.setItem("admin_token", refreshBody.data.accessToken);
+            if (refreshBody.data.refreshToken) localStorage.setItem("admin_refresh_token", refreshBody.data.refreshToken);
+            return api(path, init, true);
+          }
+        } catch { /* Refresh failed, proceed to logout */ }
+      }
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_refresh_token");
+      window.location.reload();
+      throw new Error("Session expired. Please sign in again.");
+    }
     const body = await response.json(); if (!response.ok) throw new Error(body.message ?? "Request failed"); return body.data;
   };
   const load = useCallback(async () => {

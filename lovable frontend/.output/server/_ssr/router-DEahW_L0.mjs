@@ -1,12 +1,12 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { c as require_jsx_runtime, i as Slot } from "../_libs/@radix-ui/react-arrow+[...].mjs";
-import { t as StoreProvider } from "./store-context-91WXZWxM.mjs";
+import { t as StoreProvider } from "./store-context-ZHfsmobz.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { t as cn } from "./utils-C_uf36nf.mjs";
 import { t as Button } from "./button-Bq5vK6RO.mjs";
 import { t as Input } from "./input-B8Q2ztVi.mjs";
-import { A as BadgePercent, E as ChartColumn, O as Boxes, b as Leaf, c as ShoppingCart, g as Package, h as PanelLeft, k as Bike, n as Users, o as Tags, t as X, x as LayoutDashboard } from "../_libs/lucide-react.mjs";
+import { A as Boxes, C as LayoutDashboard, N as BadgePercent, O as ChartColumn, S as Leaf, _ as Package, c as ShoppingCart, g as PanelLeft, j as Bike, n as Users, o as Tags, t as X } from "../_libs/lucide-react.mjs";
 import { a as DialogOverlay, i as DialogDescription, n as DialogClose, o as DialogPortal, r as DialogContent, s as DialogTitle, t as Dialog } from "../_libs/@radix-ui/react-dialog+[...].mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { _ as useRouter, c as HeadContent, d as createRouter, f as Outlet, g as Link, h as createRootRouteWithContext, l as useRouterState, m as createFileRoute, p as lazyRouteComponent, s as Scripts } from "../_libs/@tanstack/react-router+[...].mjs";
@@ -14,10 +14,10 @@ import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
 import { t as Root } from "../_libs/radix-ui__react-separator.mjs";
 import { a as Trigger, i as Root3, n as Portal, r as Provider, t as Content2 } from "../_libs/radix-ui__react-tooltip.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-nlTQK5UV.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DEahW_L0.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
-var styles_default = "/assets/styles-atDgV-FS.css";
+var styles_default = "/assets/styles-Dx2adW2q.css";
 function reportLovableError(error, context = {}) {
 	if (typeof window === "undefined") return;
 	window.__lovableEvents?.captureException?.(error, {
@@ -572,6 +572,7 @@ function AppSidebar() {
 					className: "mt-2 w-full rounded-md border px-2 py-1.5 text-sm",
 					onClick: () => {
 						localStorage.removeItem("admin_token");
+						localStorage.removeItem("admin_refresh_token");
 						window.location.reload();
 					},
 					children: "Logout"
@@ -762,7 +763,8 @@ function AdminLogin({ onLogin }) {
 		event.preventDefault();
 		setError("");
 		try {
-			const response = await fetch("http://localhost:5001/api/v1/auth/login", {
+			const baseUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "http://localhost:5001" : "https://vrindawan-mart-redis.onrender.com";
+			const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -773,6 +775,7 @@ function AdminLogin({ onLogin }) {
 			const body = await response.json();
 			if (!response.ok || body.data?.user?.role !== "ADMIN") throw new Error(body.message ?? "Admin credentials are required.");
 			localStorage.setItem("admin_token", body.data.accessToken);
+			if (body.data.refreshToken) localStorage.setItem("admin_refresh_token", body.data.refreshToken);
 			onLogin();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Unable to sign in.");
@@ -844,7 +847,7 @@ var Route$9 = createFileRoute("/sitemap.xml")({ server: { handlers: { GET: async
 		"Cache-Control": "public, max-age=3600"
 	} });
 } } } });
-var $$splitComponentImporter$8 = () => import("./reports-C_nOBUM9.mjs");
+var $$splitComponentImporter$8 = () => import("./reports-Bio0U7Nr.mjs");
 var Route$8 = createFileRoute("/reports")({
 	head: () => ({ meta: [{ title: "Sales Reports — GroceryMart Admin" }, {
 		name: "description",
@@ -852,7 +855,7 @@ var Route$8 = createFileRoute("/reports")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$8, "component")
 });
-var $$splitComponentImporter$7 = () => import("./products-Co6qSOzL.mjs");
+var $$splitComponentImporter$7 = () => import("./products-CPO9wZrJ.mjs");
 var Route$7 = createFileRoute("/products")({
 	head: () => ({ meta: [{ title: "Products — GroceryMart Admin" }, {
 		name: "description",
@@ -860,7 +863,7 @@ var Route$7 = createFileRoute("/products")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$7, "component")
 });
-var $$splitComponentImporter$6 = () => import("./orders-DCQXA03H.mjs");
+var $$splitComponentImporter$6 = () => import("./orders-B-VK1XLB.mjs");
 var Route$6 = createFileRoute("/orders")({
 	head: () => ({ meta: [{ title: "Orders — GroceryMart Admin" }, {
 		name: "description",
@@ -868,7 +871,7 @@ var Route$6 = createFileRoute("/orders")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$6, "component")
 });
-var $$splitComponentImporter$5 = () => import("./offers-CclaOEFy.mjs");
+var $$splitComponentImporter$5 = () => import("./offers-C14pshzM.mjs");
 var Route$5 = createFileRoute("/offers")({
 	head: () => ({ meta: [{ title: "Offers — GroceryMart Admin" }, {
 		name: "description",
@@ -876,7 +879,7 @@ var Route$5 = createFileRoute("/offers")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$5, "component")
 });
-var $$splitComponentImporter$4 = () => import("./inventory-CYCg8Jzm.mjs");
+var $$splitComponentImporter$4 = () => import("./inventory-BB-5fagU.mjs");
 var Route$4 = createFileRoute("/inventory")({
 	head: () => ({ meta: [{ title: "Inventory — GroceryMart Admin" }, {
 		name: "description",
@@ -886,7 +889,7 @@ var Route$4 = createFileRoute("/inventory")({
 });
 var $$splitComponentImporter$3 = () => import("./delivery-partners-4H7mf8t0.mjs");
 var Route$3 = createFileRoute("/delivery-partners")({ component: lazyRouteComponent($$splitComponentImporter$3, "component") });
-var $$splitComponentImporter$2 = () => import("./customers-Bax8-Gjc.mjs");
+var $$splitComponentImporter$2 = () => import("./customers-Cof4TS1N.mjs");
 var Route$2 = createFileRoute("/customers")({
 	head: () => ({ meta: [{ title: "Customers — GroceryMart Admin" }, {
 		name: "description",
@@ -894,7 +897,7 @@ var Route$2 = createFileRoute("/customers")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./categories-MLYxgH9S.mjs");
+var $$splitComponentImporter$1 = () => import("./categories-CgKu4j5z.mjs");
 var Route$1 = createFileRoute("/categories")({
 	head: () => ({ meta: [{ title: "Categories — GroceryMart Admin" }, {
 		name: "description",
@@ -902,7 +905,7 @@ var Route$1 = createFileRoute("/categories")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$1, "component")
 });
-var $$splitComponentImporter = () => import("./routes-DfxTKP2n.mjs");
+var $$splitComponentImporter = () => import("./routes-JK-1BqK-.mjs");
 var Route = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "Dashboard — GroceryMart Admin" }, {
 		name: "description",
