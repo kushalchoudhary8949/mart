@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 export interface Category {
   id: string;
@@ -142,6 +142,7 @@ interface StoreState {
   offers: Offer[];
   orders: Order[];
   customers: Customer[];
+  apiError: string | null;
   addProduct: (p: Omit<Product, "id">) => void;
   updateProduct: (p: Product) => void;
   deleteProduct: (id: string) => void;
@@ -165,6 +166,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const hasLoadedOnce = useRef(false);
   const api = async (path: string, init?: RequestInit) => {
     const token = typeof window === "undefined" ? null : localStorage.getItem("admin_token");
     const baseUrl = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
@@ -173,7 +176,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const response = await fetch(`${baseUrl}/api/v1${path}`, { ...init, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers } });
     const body = await response.json(); if (!response.ok) throw new Error(body.message ?? "Request failed"); return body.data;
   };
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [categoryData, productData, offerData, orderData, customerData] = await Promise.all([api("/admin/categories"), api("/admin/products"), api("/admin/offers"), api("/admin/orders?limit=100"), api("/admin/customers")]);
       setCategories(categoryData.categories.map((c: any) => ({ id: String(c.id), name: c.name, emoji: c.icon ?? "🏷️", description: c.slug })));
@@ -181,8 +184,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setOffers(offerData.offers.map((o: any) => ({ id: String(o.id), title: o.name, code: o.code ?? "", type: o.type === "FLAT" ? "flat" : "percent", value: o.value, minOrder: o.minCartValue ?? 0, validTill: o.endDate, active: o.isActive })));
       setOrders(orderData.orders.map((o: any) => ({ id: String(o.id), customerName: o.user?.name ?? o.user?.phone ?? "Customer", items: o.items?.length ?? 0, total: o.total, status: o.status.toLowerCase(), payment: o.paymentMethod, date: o.placedAt ? o.placedAt.split('T')[0] : "" })));
       setCustomers(customerData.customers.map((c: any) => ({ id: String(c.id), name: c.name ?? "Customer", phone: c.phone, email: c.email ?? "", orders: c.orders, totalSpent: c.totalSpent, joined: c.createdAt })));
-    } catch { /* Login and local development may not have the API available yet. */ }
-  };
+      setApiError(null);
+      hasLoadedOnce.current = true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to reach backend";
+      console.error("[StoreProvider] API load failed:", message);
+      setApiError(message);
+      // On first failure, fall back to initial seed data so the panel is not completely empty
+      if (!hasLoadedOnce.current) {
+        setCategories(initialCategories);
+        setProducts(initialProducts);
+        setOffers(initialOffers);
+        setOrders(initialOrders);
+        setCustomers(initialCustomers);
+      }
+    }
+  }, []);
   useEffect(() => {
     if (typeof window === "undefined" || !localStorage.getItem("admin_token")) return;
     load();
@@ -200,7 +217,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } else socket.onAny(load);
     const refresh = window.setInterval(load, 15000);
     return () => { window.clearInterval(refresh); socket?.disconnect(); script?.remove(); };
-  }, []);
+  }, [load]);
 
   const value: StoreState = {
     categories,
@@ -208,6 +225,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     offers,
     orders,
     customers,
+    apiError,
     addProduct: (p) => { void api("/admin/products", { method: "POST", body: JSON.stringify({ category_id: Number(p.categoryId), name: p.name, slug: p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock }) }).then(load); },
     updateProduct: (p) => { void api(`/admin/products/${p.id}`, { method: "PUT", body: JSON.stringify({ name: p.name, unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock, is_active: p.active }) }).then(load); },
     deleteProduct: (id) => { void api(`/admin/products/${id}`, { method: "DELETE" }).then(load); },
@@ -230,7 +248,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
   };
 
-  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+  return (
+    <StoreContext.Provider value={value}>
+      {apiError && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "12px 16px", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px", position: "sticky", top: 0, zIndex: 50 }}>
+          <span style={{ fontWeight: 600 }}>⚠️ Backend unreachable</span>
+          <span>— {apiError}. Showing offline data. Check Render dashboard.</span>
+          <button onClick={() => { setApiError(null); load(); }} style={{ marginLeft: "auto", background: "#991b1b", color: "white", border: "none", borderRadius: "6px", padding: "4px 12px", cursor: "pointer", fontSize: "13px" }}>Retry</button>
+        </div>
+      )}
+      {children}
+    </StoreContext.Provider>
+  );
 }
 
 export function useStore() {
