@@ -1,3 +1,4 @@
+import { redis } from '../config/redis';
 import * as categoryRepo from '../repositories/category.repository';
 import * as productRepo from '../repositories/product.repository';
 import * as bannerRepo from '../repositories/banner.repository';
@@ -7,8 +8,14 @@ import { HTTP_STATUS } from '../utils/constants';
 // ─── Public Categories ───────────────────────────────────────────────────────
 
 export async function getCategories() {
+  try {
+    const cached = await redis.get('cache:categories');
+    if (cached) return JSON.parse(cached);
+  } catch {}
   const categories = await categoryRepo.findAll();
-  return { categories };
+  const result = { categories };
+  try { await redis.set('cache:categories', JSON.stringify(result), 'EX', 60); } catch {}
+  return result;
 }
 
 export async function getCategoryDetail(slug: string) {
@@ -22,8 +29,14 @@ export async function getCategoryDetail(slug: string) {
 // ─── Public Banners ──────────────────────────────────────────────────────────
 
 export async function getActiveBanners() {
+  try {
+    const cached = await redis.get('cache:banners');
+    if (cached) return JSON.parse(cached);
+  } catch {}
   const banners = await bannerRepo.findActive();
-  return { banners };
+  const result = { banners };
+  try { await redis.set('cache:banners', JSON.stringify(result), 'EX', 60); } catch {}
+  return result;
 }
 
 // ─── Public Products ─────────────────────────────────────────────────────────
@@ -37,6 +50,11 @@ export async function queryProducts(filters: {
   limit?: number;
 }) {
   const { q, category, featured, sort, page = 1, limit = 20 } = filters;
+  const cacheKey = `cache:products:${q || ''}:${category || ''}:${Boolean(featured)}:${sort || ''}:${page}:${limit}`;
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch {}
 
   const { products, total } = await productRepo.findMany({
     q,
@@ -65,7 +83,7 @@ export async function queryProducts(filters: {
     category_slug: p.category.slug,
   }));
 
-  return {
+  const result = {
     products: mappedProducts,
     pagination: {
       page,
@@ -74,6 +92,8 @@ export async function queryProducts(filters: {
       total_pages: Math.ceil(total / limit),
     },
   };
+  try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 30); } catch {}
+  return result;
 }
 
 export async function getProductDetail(slug: string) {
