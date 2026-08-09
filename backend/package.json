@@ -12,7 +12,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "generate:products": "ts-node scripts/generate-sample-csv.ts",
+    "import:products": "ts-node scripts/import-products.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.12.1",
