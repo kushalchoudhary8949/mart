@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../middlewares/asyncWrapper';
 import { HTTP_STATUS } from '../utils/constants';
 import * as catalogService from '../services/catalog.service';
+import * as searchService from '../services/search.service';
 import { AppError } from '../utils/AppError';
 
 // ─── GET /categories ─────────────────────────────────────────────────────────
@@ -39,8 +40,19 @@ export const getBanners = catchAsync(async (_req: Request, res: Response) => {
 // ─── GET /products ───────────────────────────────────────────────────────────
 
 export const getProducts = catchAsync(async (req: Request, res: Response) => {
-  // Query params are already parsed & validated via Zod middleware
-  const result = await catalogService.queryProducts(req.query as any);
+  const result = await searchService.searchProducts(req.query as any);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: result,
+  });
+});
+
+// ─── GET /products/search/suggestions ───────────────────────────────────────
+
+export const getSearchSuggestions = catchAsync(async (req: Request, res: Response) => {
+  const q = String(req.query.q || '');
+  const result = await searchService.getSearchSuggestions(q);
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
