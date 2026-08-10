@@ -41,6 +41,26 @@ export interface Order {
   status: OrderStatus;
   payment: "COD" | "UPI" | "Card";
   date: string;
+  deliveryPartnerId: number | null;
+  deliveryPartnerName: string | null;
+  deliveryPartnerPhone: string | null;
+  deliveryPartnerVehicle: string | null;
+}
+
+export interface DeliveryPartner {
+  id: number;
+  userId: number;
+  name: string;
+  phone: string;
+  vehicleType: string;
+  vehicleNumber: string;
+  profileImage: string | null;
+  rating: number;
+  isOnline: boolean;
+  isAvailable: boolean;
+  currentLatitude: number | null;
+  currentLongitude: number | null;
+  orderCount: number;
 }
 
 export interface Customer {
@@ -85,16 +105,16 @@ const initialOffers: Offer[] = [
 ];
 
 const initialOrders: Order[] = [
-  { id: "ORD-1042", customerName: "Priya Sharma", items: 8, total: 742, status: "pending", payment: "UPI", date: "2026-07-12" },
-  { id: "ORD-1041", customerName: "Rahul Verma", items: 3, total: 215, status: "ready_for_pickup", payment: "COD", date: "2026-07-12" },
-  { id: "ORD-1040", customerName: "Anita Desai", items: 12, total: 1380, status: "out_for_delivery", payment: "Card", date: "2026-07-12" },
-  { id: "ORD-1039", customerName: "Vikram Singh", items: 5, total: 460, status: "delivered", payment: "UPI", date: "2026-07-11" },
-  { id: "ORD-1038", customerName: "Meera Nair", items: 7, total: 890, status: "delivered", payment: "UPI", date: "2026-07-11" },
-  { id: "ORD-1037", customerName: "Arjun Patel", items: 2, total: 96, status: "cancelled", payment: "COD", date: "2026-07-11" },
-  { id: "ORD-1036", customerName: "Sunita Rao", items: 9, total: 1120, status: "delivered", payment: "Card", date: "2026-07-10" },
-  { id: "ORD-1035", customerName: "Karan Mehta", items: 4, total: 385, status: "delivered", payment: "UPI", date: "2026-07-10" },
-  { id: "ORD-1034", customerName: "Divya Iyer", items: 6, total: 640, status: "delivered", payment: "COD", date: "2026-07-09" },
-  { id: "ORD-1033", customerName: "Priya Sharma", items: 10, total: 980, status: "delivered", payment: "UPI", date: "2026-07-09" },
+  { id: "ORD-1042", customerName: "Priya Sharma", items: 8, total: 742, status: "pending", payment: "UPI", date: "2026-07-12", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1041", customerName: "Rahul Verma", items: 3, total: 215, status: "ready_for_pickup", payment: "COD", date: "2026-07-12", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1040", customerName: "Anita Desai", items: 12, total: 1380, status: "out_for_delivery", payment: "Card", date: "2026-07-12", deliveryPartnerId: 1, deliveryPartnerName: "Rohan Gupta", deliveryPartnerPhone: "+91 98765 10101", deliveryPartnerVehicle: "Bike · DL 8S AB 1080" },
+  { id: "ORD-1039", customerName: "Vikram Singh", items: 5, total: 460, status: "delivered", payment: "UPI", date: "2026-07-11", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1038", customerName: "Meera Nair", items: 7, total: 890, status: "delivered", payment: "UPI", date: "2026-07-11", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1037", customerName: "Arjun Patel", items: 2, total: 96, status: "cancelled", payment: "COD", date: "2026-07-11", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1036", customerName: "Sunita Rao", items: 9, total: 1120, status: "delivered", payment: "Card", date: "2026-07-10", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1035", customerName: "Karan Mehta", items: 4, total: 385, status: "delivered", payment: "UPI", date: "2026-07-10", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1034", customerName: "Divya Iyer", items: 6, total: 640, status: "delivered", payment: "COD", date: "2026-07-09", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
+  { id: "ORD-1033", customerName: "Priya Sharma", items: 10, total: 980, status: "delivered", payment: "UPI", date: "2026-07-09", deliveryPartnerId: null, deliveryPartnerName: null, deliveryPartnerPhone: null, deliveryPartnerVehicle: null },
 ];
 
 const initialCustomers: Customer[] = [
@@ -142,6 +162,7 @@ interface StoreState {
   offers: Offer[];
   orders: Order[];
   customers: Customer[];
+  deliveryPartners: DeliveryPartner[];
   apiError: string | null;
   addProduct: (p: Omit<Product, "id">) => void;
   updateProduct: (p: Product) => void;
@@ -156,6 +177,11 @@ interface StoreState {
   updateOrderStatus: (id: string, status: OrderStatus) => void;
   sendNotification: (userId: string, title: string, message: string, type?: string) => Promise<void>;
   broadcastOffer: (id: string) => Promise<void>;
+  fetchDeliveryPartners: () => Promise<void>;
+  addDeliveryPartner: (data: { name: string; phone: string; password: string; vehicleType: string; vehicleNumber: string }) => Promise<void>;
+  removeDeliveryPartner: (id: number) => Promise<void>;
+  assignDeliveryPartner: (orderId: string, partnerId: number) => Promise<void>;
+  getPartnerLocation: (partnerId: number) => Promise<{ partner: any; location: any } | null>;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -166,6 +192,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [deliveryPartners, setDeliveryPartners] = useState<DeliveryPartner[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
   const hasLoadedOnce = useRef(false);
   const api = async (path: string, init?: RequestInit, isRetry = false): Promise<any> => {
@@ -207,7 +234,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCategories(categoryData.categories.map((c: any) => ({ id: String(c.id), name: c.name, emoji: c.icon ?? "🏷️", description: c.slug })));
       setProducts(productData.products.map((p: any) => ({ id: String(p.id), name: p.name, emoji: "📦", categoryId: String(p.category_id), unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock, lowStockThreshold: p.low_stock_threshold ?? 10, active: Boolean(p.is_active) })));
       setOffers(offerData.offers.map((o: any) => ({ id: String(o.id), title: o.name, code: o.code ?? "", type: o.type === "FLAT" ? "flat" : "percent", value: o.value, minOrder: o.minCartValue ?? 0, validTill: o.endDate, active: o.isActive })));
-      setOrders(orderData.orders.map((o: any) => ({ id: String(o.id), customerName: o.user?.name ?? o.user?.phone ?? "Customer", items: o.items?.length ?? 0, total: o.total, status: o.status.toLowerCase(), payment: o.paymentMethod, date: o.placedAt ? o.placedAt.split('T')[0] : "" })));
+      setOrders(orderData.orders.map((o: any) => ({ id: String(o.id), customerName: o.user?.name ?? o.user?.phone ?? "Customer", items: o.items?.length ?? 0, total: o.total, status: o.status.toLowerCase(), payment: o.paymentMethod, date: o.placedAt ? o.placedAt.split('T')[0] : "", deliveryPartnerId: o.deliveryPartner?.id ?? null, deliveryPartnerName: o.deliveryPartner?.name ?? null, deliveryPartnerPhone: o.deliveryPartner?.phone ?? null, deliveryPartnerVehicle: o.deliveryPartner ? `${o.deliveryPartner.vehicleType} · ${o.deliveryPartner.vehicleNumber}` : null })));
+      try {
+        const partnerData = await api("/admin/delivery-partners");
+        setDeliveryPartners(partnerData.map((p: any) => ({ id: p.id, userId: p.userId, name: p.name, phone: p.phone, vehicleType: p.vehicleType, vehicleNumber: p.vehicleNumber, profileImage: p.profileImage, rating: p.rating, isOnline: p.isOnline, isAvailable: p.isAvailable, currentLatitude: p.currentLatitude, currentLongitude: p.currentLongitude, orderCount: p._count?.orders ?? 0 })));
+      } catch { /* delivery partner list fetch failed, non-critical */ }
       setCustomers(customerData.customers.map((c: any) => ({ id: String(c.id), name: c.name ?? "Customer", phone: c.phone, email: c.email ?? "", orders: c.orders, totalSpent: c.totalSpent, joined: c.createdAt })));
       setApiError(null);
       hasLoadedOnce.current = true;
@@ -254,6 +285,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     offers,
     orders,
     customers,
+    deliveryPartners,
     apiError,
     addProduct: (p) => { void api("/admin/products", { method: "POST", body: JSON.stringify({ category_id: Number(p.categoryId), name: p.name, slug: p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock }) }).then(load); },
     updateProduct: (p) => { void api(`/admin/products/${p.id}`, { method: "PUT", body: JSON.stringify({ name: p.name, unit: p.unit, price: p.price, mrp: p.mrp, stock: p.stock, is_active: p.active }) }).then(load); },
@@ -274,6 +306,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     broadcastOffer: async (id) => {
       await api(`/admin/offers/${id}/broadcast`, { method: "POST" });
+    },
+    fetchDeliveryPartners: async () => {
+      const partnerData = await api("/admin/delivery-partners");
+      setDeliveryPartners(partnerData.map((p: any) => ({ id: p.id, userId: p.userId, name: p.name, phone: p.phone, vehicleType: p.vehicleType, vehicleNumber: p.vehicleNumber, profileImage: p.profileImage, rating: p.rating, isOnline: p.isOnline, isAvailable: p.isAvailable, currentLatitude: p.currentLatitude, currentLongitude: p.currentLongitude, orderCount: p._count?.orders ?? 0 })));
+    },
+    addDeliveryPartner: async (data) => {
+      await api("/admin/delivery-partners", { method: "POST", body: JSON.stringify(data) });
+      await load();
+    },
+    removeDeliveryPartner: async (id) => {
+      await api(`/admin/delivery-partners/${id}`, { method: "DELETE" });
+      await load();
+    },
+    assignDeliveryPartner: async (orderId, partnerId) => {
+      await api(`/admin/orders/${orderId}/assign`, { method: "POST", body: JSON.stringify({ partnerId }) });
+      await load();
+    },
+    getPartnerLocation: async (partnerId) => {
+      try {
+        return await api(`/admin/delivery-partners/${partnerId}/location`);
+      } catch { return null; }
     },
   };
 

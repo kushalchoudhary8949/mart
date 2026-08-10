@@ -31,7 +31,10 @@ export function updatePartner(id: number, data: Prisma.DeliveryPartnerUpdateInpu
 }
 
 export function deletePartner(id: number) {
-  return prisma.deliveryPartner.delete({ where: { id } });
+  return prisma.$transaction(async (tx) => {
+    await tx.order.updateMany({ where: { deliveryPartnerId: id }, data: { deliveryPartnerId: null } });
+    return tx.deliveryPartner.delete({ where: { id } });
+  });
 }
 
 export function findOrder(id: number) {

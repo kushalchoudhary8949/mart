@@ -15,5 +15,6 @@ router.get('/delivery-partners', controller.partners);
 router.post('/delivery-partners', validate(partnerSchema), controller.createPartner);
 router.patch('/delivery-partners/:id', validateParams(idParamsSchema), validate(partnerUpdateSchema), controller.updatePartner);
 router.delete('/delivery-partners/:id', validateParams(idParamsSchema), controller.removePartner);
+router.get('/delivery-partners/:id/location', validateParams(idParamsSchema), controller.location);
 router.get('/delivery-reports', controller.reports);
 export default router;

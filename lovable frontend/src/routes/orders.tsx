@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Bike } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -53,8 +53,10 @@ const statusClass: Record<OrderStatus, string> = {
   cancelled: "bg-destructive/10 text-destructive",
 };
 
+const assignableStatuses = new Set<OrderStatus>(["accepted", "packing", "ready_for_pickup"]);
+
 function OrdersPage() {
-  const { orders, updateOrderStatus } = useStore();
+  const { orders, updateOrderStatus, deliveryPartners, assignDeliveryPartner } = useStore();
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -65,6 +67,8 @@ function OrdersPage() {
   });
 
   const count = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
+
+  const availablePartners = deliveryPartners.filter((p) => p.isAvailable);
 
   return (
     <div className="space-y-4">
@@ -102,7 +106,7 @@ function OrdersPage() {
                 <TableHead className="text-right">Items</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead>Payment</TableHead>
-                <TableHead>Delivery partner</TableHead>
+                <TableHead>Delivery Partner</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-44">Update</TableHead>
               </TableRow>
@@ -118,7 +122,35 @@ function OrdersPage() {
                   <TableCell>
                     <Badge variant="outline">{o.payment}</Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{o.status === "out_for_delivery" ? "Assigned partner" : "—"}</TableCell>
+                  <TableCell>
+                    {o.deliveryPartnerName ? (
+                      <div className="flex items-center gap-1.5">
+                        <Bike className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium">{o.deliveryPartnerName}</span>
+                      </div>
+                    ) : assignableStatuses.has(o.status) && availablePartners.length > 0 ? (
+                      <Select
+                        onValueChange={(partnerId) => {
+                          const partner = deliveryPartners.find((p) => p.id === Number(partnerId));
+                          assignDeliveryPartner(o.id, Number(partnerId));
+                          toast.success(`Assigned ${partner?.name ?? "partner"} to ${o.id}`);
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-36 text-xs">
+                          <SelectValue placeholder="Assign partner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availablePartners.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={statusClass[o.status]}>
                       {statusLabel[o.status]}
@@ -160,3 +192,4 @@ function OrdersPage() {
     </div>
   );
 }
+

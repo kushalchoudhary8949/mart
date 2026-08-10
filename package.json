@@ -18,6 +18,7 @@
     "db:console:prod": "wrangler d1 execute webapp-production"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "hono": "^4.12.27"
   },
   "devDependencies": {
