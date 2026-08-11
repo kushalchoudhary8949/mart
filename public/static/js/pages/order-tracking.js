@@ -149,7 +149,7 @@ const OrderTrackingPage = (() => {
         <div class="space-y-3">
           ${items.map((it) => `
             <div class="flex gap-3 items-center">
-              <img src="${it.image}" class="w-12 h-12 rounded-lg object-cover" />
+              <img src="${it.image}" loading="lazy" decoding="async" class="w-12 h-12 rounded-lg object-cover" />
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-800 line-clamp-1">${UI.escapeHtml(it.name)}</p>
                 <p class="text-xs text-gray-400">${it.quantity} x ${UI.money(it.price)}</p>

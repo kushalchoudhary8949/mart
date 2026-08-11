@@ -47,6 +47,7 @@ const ProfilePage = (() => {
     document.getElementById('logout-btn').addEventListener('click', async () => {
       try { await Api.logout() } catch (e) {}
       Api.setToken(null)
+      Api.setRefreshToken(null)
       Store.setUser(null)
       Store.setCart([], 0)
       Store.setWishlistIds([])

@@ -4,6 +4,19 @@ import * as productRepo from '../repositories/product.repository';
 import * as bannerRepo from '../repositories/banner.repository';
 import { AppError } from '../utils/AppError';
 import { HTTP_STATUS } from '../utils/constants';
+import { config } from '../config';
+
+// ─── Image Optimization via wsrv.nl CDN ──────────────────────────────────────
+// Proxies image URLs through a free, global CDN that auto-converts to WebP,
+// resizes, and caches at the edge. Zero cost, no signup.
+function optimizeImageUrl(url: string | null | undefined, width = 400): string | null {
+  if (!url) return null;
+  // Skip if already optimized or is a data URI
+  if (url.startsWith('data:') || url.includes('wsrv.nl')) return url;
+  // Only proxy in production to avoid issues in local dev
+  if (config.env === 'development') return url;
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&q=80&output=webp&default=placeholder`;
+}
 
 // ─── Public Categories ───────────────────────────────────────────────────────
 
@@ -14,7 +27,7 @@ export async function getCategories() {
   } catch {}
   const categories = await categoryRepo.findAll();
   const result = { categories };
-  try { await redis.set('cache:categories', JSON.stringify(result), 'EX', 60); } catch {}
+  try { await redis.set('cache:categories', JSON.stringify(result), 'EX', 300); } catch {}
   return result;
 }
 
@@ -35,7 +48,7 @@ export async function getActiveBanners() {
   } catch {}
   const banners = await bannerRepo.findActive();
   const result = { banners };
-  try { await redis.set('cache:banners', JSON.stringify(result), 'EX', 60); } catch {}
+  try { await redis.set('cache:banners', JSON.stringify(result), 'EX', 300); } catch {}
   return result;
 }
 
@@ -74,7 +87,7 @@ export async function queryProducts(filters: {
     price: p.price,
     mrp: p.mrp,
     unit: p.unit,
-    image: p.thumbnail ?? p.images?.[0]?.url ?? null,
+    image: optimizeImageUrl(p.thumbnail ?? p.images?.[0]?.url ?? null, 300),
     stock: p.stock,
     rating: p.rating,
     rating_count: p.ratingCount,
@@ -92,7 +105,7 @@ export async function queryProducts(filters: {
       total_pages: Math.ceil(total / limit),
     },
   };
-  try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 30); } catch {}
+  try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 300); } catch {}
   return result;
 }
 
@@ -111,14 +124,14 @@ export async function getProductDetail(slug: string) {
     price: p.price,
     mrp: p.mrp,
     unit: p.unit,
-    image: p.thumbnail ?? p.images?.[0]?.url ?? null,
+    image: optimizeImageUrl(p.thumbnail ?? p.images?.[0]?.url ?? null, 300),
     rating: p.rating,
   }));
 
   // Flatten gallery urls
   const images = product.images.length > 0
-    ? product.images.map((img) => img.url)
-    : product.thumbnail ? [product.thumbnail] : [];
+    ? product.images.map((img) => optimizeImageUrl(img.url, 800)!)
+    : product.thumbnail ? [optimizeImageUrl(product.thumbnail, 800)!] : [];
 
   return {
     product: {
@@ -130,7 +143,7 @@ export async function getProductDetail(slug: string) {
       price: product.price,
       mrp: product.mrp,
       unit: product.unit,
-      image: product.thumbnail ?? null,
+      image: optimizeImageUrl(product.thumbnail, 800),
       stock: product.stock,
       rating: product.rating,
       rating_count: product.ratingCount,
@@ -152,8 +165,8 @@ export async function getProductImageGallery(productId: number) {
   }
 
   const images = product.images.length > 0
-    ? product.images.map((img) => img.url)
-    : product.thumbnail ? [product.thumbnail] : [];
+    ? product.images.map((img) => optimizeImageUrl(img.url, 800)!)
+    : product.thumbnail ? [optimizeImageUrl(product.thumbnail, 800)!] : [];
 
   return { images };
 }

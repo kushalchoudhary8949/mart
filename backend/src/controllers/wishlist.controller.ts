@@ -3,6 +3,14 @@ import { catchAsync } from '../middlewares/asyncWrapper';
 import { HTTP_STATUS } from '../utils/constants';
 import { prisma } from '../config/database';
 import { AppError } from '../utils/AppError';
+import { config } from '../config';
+
+function optimizeImageUrl(url: string | null | undefined, width = 400): string | null {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.includes('wsrv.nl')) return url;
+  if (config.env === 'development') return url;
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&q=80&output=webp&default=placeholder`;
+}
 
 export const getWishlist = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.id;
@@ -28,7 +36,7 @@ export const getWishlist = catchAsync(async (req: Request, res: Response) => {
     price: wi.product.price,
     mrp: wi.product.mrp,
     unit: wi.product.unit,
-    image: wi.product.thumbnail ?? wi.product.images?.[0]?.url ?? null,
+    image: optimizeImageUrl(wi.product.thumbnail ?? wi.product.images?.[0]?.url ?? null, 300),
     rating: wi.product.rating,
     stock: wi.product.stock
   }));

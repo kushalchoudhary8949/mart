@@ -173,6 +173,7 @@ const AuthPage = (() => {
       try {
         const { data } = await Api.verifyOtp(currentPhone, code, name)
         Api.setToken(data.token)
+        if (data.refreshToken) Api.setRefreshToken(data.refreshToken)
         Store.setUser(data.user)
         UI.toast(`Welcome${data.user.name ? ', ' + data.user.name : ''}!`, 'success')
         await Promise.all([Store.refreshCart(), Store.refreshWishlist(), Store.refreshNotifications()])

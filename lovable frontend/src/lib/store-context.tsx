@@ -275,7 +275,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!socket) {
       script = document.createElement("script"); script.src = "https://cdn.socket.io/4.8.1/socket.io.min.js"; script.onload = () => { socket = connect(); socket?.onAny(debouncedLoad); }; document.head.appendChild(script);
     } else socket.onAny(debouncedLoad);
-    const refresh = window.setInterval(load, 45000);
+    const refresh = window.setInterval(load, 120000);
     return () => { window.clearInterval(refresh); if (timer) window.clearTimeout(timer); socket?.disconnect(); script?.remove(); };
   }, [load]);
 

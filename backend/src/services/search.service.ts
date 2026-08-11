@@ -1,6 +1,15 @@
 import { prisma } from '../config/database';
 import { redis } from '../config/redis';
 import { Prisma } from '@prisma/client';
+import { config } from '../config';
+
+// Re-use the same image optimization as catalog.service
+function optimizeImageUrl(url: string | null | undefined, width = 400): string | null {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.includes('wsrv.nl')) return url;
+  if (config.env === 'development') return url;
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&q=80&output=webp&default=placeholder`;
+}
 
 const modeInsensitive = Prisma.QueryMode.insensitive;
 
@@ -268,7 +277,7 @@ export async function searchProducts(filters: {
     price: p.price,
     mrp: p.mrp,
     unit: p.unit,
-    image: p.thumbnail ?? p.images?.[0]?.url ?? null,
+    image: optimizeImageUrl(p.thumbnail ?? p.images?.[0]?.url ?? null, 300),
     stock: p.stock,
     rating: p.rating,
     rating_count: p.ratingCount,
@@ -363,7 +372,7 @@ export async function getSearchSuggestions(query: string) {
       price: p.price,
       mrp: p.mrp,
       unit: p.unit,
-      image: p.thumbnail,
+      image: optimizeImageUrl(p.thumbnail, 200),
       category_name: p.category.name,
     })),
   };

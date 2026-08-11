@@ -54,7 +54,7 @@ const ProductPage = (() => {
 
     const renderGalleryHtml = () => `
       <div class="relative aspect-square max-w-md mx-auto bg-gray-50">
-        <img id="product-gallery-img" src="${images[activeImgIdx]}" alt="${UI.escapeHtml(p.name)}" class="w-full h-full object-cover" />
+        <img id="product-gallery-img" src="${images[activeImgIdx]}" alt="${UI.escapeHtml(p.name)}" decoding="async" class="w-full h-full object-cover" />
         ${discount > 0 ? `<span class="absolute top-3 left-3 bg-accent-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">${discount}% OFF</span>` : ''}
         <button data-action="toggle-wishlist-detail" class="absolute top-3 right-3 w-10 h-10 rounded-full bg-white shadow flex items-center justify-center ${inWishlist ? 'text-red-500' : 'text-gray-400'}">
           <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i>

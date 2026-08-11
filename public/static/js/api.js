@@ -11,12 +11,31 @@ const Api = (() => {
     if (token) localStorage.setItem('fc_token', token)
     else localStorage.removeItem('fc_token')
   }
+  function getRefreshToken() {
+    return localStorage.getItem('fc_refresh_token') || null
+  }
+  function setRefreshToken(token) {
+    if (token) localStorage.setItem('fc_refresh_token', token)
+    else localStorage.removeItem('fc_refresh_token')
+  }
 
   client.interceptors.request.use((config) => {
     const token = getToken()
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   })
+
+  // ── Silent token refresh state ──
+  let isRefreshing = false
+  let refreshQueue = [] // pending requests waiting for new token
+
+  function processQueue(error, token = null) {
+    refreshQueue.forEach(({ resolve, reject }) => {
+      if (error) reject(error)
+      else resolve(token)
+    })
+    refreshQueue = []
+  }
 
   client.interceptors.response.use(
     (res) => {
@@ -49,16 +68,66 @@ const Api = (() => {
       }
       return res;
     },
-    (err) => {
-      if (err.response && err.response.status === 401) {
-        setToken(null)
-        localStorage.removeItem('fc_user')
-        // Redirect to login — avoid redirect loop if already on login page
-        if (window.location.hash !== '#/login') {
-          sessionStorage.setItem('fc_redirect_after_login', window.location.hash.slice(1) || '/')
-          window.location.hash = '/login'
+    async (err) => {
+      const originalRequest = err.config
+
+      // Only attempt refresh for 401 errors that haven't already been retried
+      if (err.response && err.response.status === 401 && !originalRequest._retry) {
+        const refreshToken = getRefreshToken()
+
+        // No refresh token available — go straight to login
+        if (!refreshToken) {
+          setToken(null)
+          localStorage.removeItem('fc_user')
+          if (window.location.hash !== '#/login') {
+            sessionStorage.setItem('fc_redirect_after_login', window.location.hash.slice(1) || '/')
+            window.location.hash = '/login'
+          }
+          return Promise.reject(err)
+        }
+
+        // If already refreshing, queue this request
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            refreshQueue.push({ resolve, reject })
+          }).then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`
+            return client(originalRequest)
+          })
+        }
+
+        originalRequest._retry = true
+        isRefreshing = true
+
+        try {
+          const { data } = await axios.post('/api/auth/refresh', { refreshToken })
+          const newAccessToken = data?.data?.accessToken || data?.accessToken
+          const newRefreshToken = data?.data?.refreshToken || data?.refreshToken
+
+          if (newAccessToken) {
+            setToken(newAccessToken)
+            if (newRefreshToken) setRefreshToken(newRefreshToken)
+            processQueue(null, newAccessToken)
+
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+            return client(originalRequest)
+          }
+          throw new Error('No access token in refresh response')
+        } catch (refreshErr) {
+          processQueue(refreshErr, null)
+          setToken(null)
+          setRefreshToken(null)
+          localStorage.removeItem('fc_user')
+          if (window.location.hash !== '#/login') {
+            sessionStorage.setItem('fc_redirect_after_login', window.location.hash.slice(1) || '/')
+            window.location.hash = '/login'
+          }
+          return Promise.reject(refreshErr)
+        } finally {
+          isRefreshing = false
         }
       }
+
       return Promise.reject(err)
     }
   )
@@ -70,6 +139,8 @@ const Api = (() => {
   return {
     getToken,
     setToken,
+    getRefreshToken,
+    setRefreshToken,
     errMsg,
     // auth
     requestOtp: (phone, purpose) => client.post('/auth/otp/request', { phone, purpose }),

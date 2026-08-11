@@ -77,6 +77,15 @@ app.get('/', (_req: Request, res: Response) => {
   });
 });
 
+// ─── Cache-Control for public catalog endpoints ──────────────────────────────
+const PUBLIC_CACHEABLE = /^\/(categories|products|banners|store\/info)/;
+app.use(`/api/${config.apiVersion}`, (req: Request, res: Response, next: NextFunction) => {
+  if (req.method === 'GET' && PUBLIC_CACHEABLE.test(req.path)) {
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+  }
+  next();
+});
+
 // Mount routes at versioned path (/api/v1)
 app.use(`/api/${config.apiVersion}`, routes);
 
