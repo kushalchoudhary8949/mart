@@ -148,8 +148,14 @@ try {
     },
   };
 
+  const targetHost = (config.redis.url || config.redis.host || '').toLowerCase();
+  const isRemoteHost =
+    targetHost.includes('upstash.io') ||
+    targetHost.startsWith('rediss://') ||
+    (!targetHost.includes('localhost') && !targetHost.includes('127.0.0.1') && targetHost.length > 0);
+  const useTls = config.redis.tls || isRemoteHost || config.env === 'production';
+
   if (config.redis.url) {
-    const useTls = config.redis.url.startsWith('rediss://') || config.env === 'production';
     redisInstance = new Redis(config.redis.url, {
       ...redisOptions,
       ...(useTls ? { tls: { rejectUnauthorized: false } } : {}),
@@ -159,7 +165,7 @@ try {
       host: config.redis.host,
       port: config.redis.port,
       password: config.redis.password,
-      ...(config.env === 'production' ? { tls: { rejectUnauthorized: false } } : {}),
+      ...(useTls ? { tls: { rejectUnauthorized: false } } : {}),
       ...redisOptions,
     });
   }

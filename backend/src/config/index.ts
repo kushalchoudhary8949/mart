@@ -14,6 +14,7 @@ const envSchema = z.object({
   REDIS_HOST: z.string().default('127.0.0.1'),
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_PASSWORD: z.string().optional().default(''),
+  REDIS_TLS: z.coerce.boolean().optional().default(false),
   JWT_ACCESS_SECRET: z.string().min(10),
   JWT_REFRESH_SECRET: z.string().min(10),
   JWT_ACCESS_EXPIRATION: z.string().default('15m'),
@@ -42,6 +43,7 @@ export const config = {
     host: parsedEnv.data.REDIS_HOST,
     port: parsedEnv.data.REDIS_PORT,
     password: parsedEnv.data.REDIS_PASSWORD || undefined,
+    tls: parsedEnv.data.REDIS_TLS,
   },
   jwt: {
     accessSecret: parsedEnv.data.JWT_ACCESS_SECRET,
