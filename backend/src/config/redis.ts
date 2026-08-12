@@ -135,16 +135,27 @@ let redisInstance: Redis;
 let isConnected = false;
 const fallback = new InMemoryRedisFallback();
 
+let hasLoggedDisconnect = false;
+
 try {
   const redisOptions = {
-    maxRetriesPerRequest: 3,
-    lazyConnect: true, // Connect manually to handle authentication rejections safely
-    retryStrategy(times: number) {
-      if (times > 3) {
-        logger.error('❌ Redis retry connection limit reached. Using In-Memory fallback.');
-        return null;
+    maxRetriesPerRequest: null, // Allow infinite retries in background without failing commands
+    enableOfflineQueue: false, // Don't buffer commands when offline; proxy instantly delegates to fallback
+    lazyConnect: true,
+    family: 4, // Force IPv4 to prevent Render IPv6 DNS resolution delays
+    keepAlive: 5000, // Send TCP keepalive packets every 5s to prevent Upstash idle socket drops
+    connectTimeout: 10000,
+    reconnectOnError(err: Error) {
+      const targetErrors = ['READONLY', 'ETIMEDOUT', 'ECONNRESET', 'EPIPE', 'CLOSED'];
+      if (targetErrors.some((e) => err.message.includes(e))) {
+        return true; // Force immediate reconnection on socket reset errors
       }
-      return Math.min(times * 100, 2000);
+      return true;
+    },
+    retryStrategy(times: number) {
+      // Exponential backoff capped at 5 seconds — NEVER return null so it NEVER permanently dies
+      const delay = Math.min(times * 200, 5000);
+      return delay;
     },
   };
 
@@ -176,11 +187,16 @@ try {
 
   redisInstance.on('ready', () => {
     isConnected = true;
+    hasLoggedDisconnect = false;
     logger.info('🚀 Redis connection established successfully.');
   });
 
   redisInstance.on('close', () => {
     isConnected = false;
+    if (!hasLoggedDisconnect) {
+      logger.warn('⚠️ Redis connection disconnected. Seamlessly using In-Memory fallback...');
+      hasLoggedDisconnect = true;
+    }
   });
 
   redisInstance.on('end', () => {
@@ -188,12 +204,16 @@ try {
   });
 
   redisInstance.on('error', (err) => {
-    logger.error('❌ Redis error:', err.message);
+    // Only log distinct non-routine errors once to prevent log spam
+    if (isConnected) {
+      logger.warn('⚠️ Redis connection issue:', err.message || 'Disconnected');
+    }
+    isConnected = false;
   });
 
-  // Explicitly trigger lazy connection and handle authentication rejections cleanly
+  // Explicitly trigger lazy connection and handle initial connection failures cleanly
   redisInstance.connect().catch((err) => {
-    logger.error('❌ Redis connection failed during initialization:', err.message);
+    logger.warn('⚠️ Initial Redis connection notice (using In-Memory fallback until connected):', err.message || 'Connecting...');
   });
 } catch (error) {
   logger.error('❌ Redis Client Initialization failed, using In-Memory fallback:', error);
