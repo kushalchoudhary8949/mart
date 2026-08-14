@@ -62,11 +62,12 @@ const Components = (() => {
     const discount = UI.discountPercent(p.price, p.mrp)
     const inWishlist = Store.state.wishlistIds.has(p.id)
     const outOfStock = p.stock <= 0
+    const imgUrl = UI.resolveProductImage(p)
     return `
     <div class="product-card bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow relative group" data-product-id="${p.id}">
       <a href="#/product/${p.slug}" class="block">
         <div class="relative aspect-square rounded-t-2xl overflow-hidden bg-gray-50">
-          <img src="${p.image}" alt="${UI.escapeHtml(p.name)}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <img src="${imgUrl}" alt="${UI.escapeHtml(p.name)}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src=UI.placeholderImage" />
           ${discount > 0 ? `<span class="absolute top-2 left-2 bg-accent-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">${discount}% OFF</span>` : ''}
           ${outOfStock ? `<div class="absolute inset-0 bg-white/70 flex items-center justify-center"><span class="text-xs font-semibold text-gray-600 bg-white px-2 py-1 rounded">Out of Stock</span></div>` : ''}
         </div>

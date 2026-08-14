@@ -4,18 +4,10 @@ import * as productRepo from '../repositories/product.repository';
 import * as bannerRepo from '../repositories/banner.repository';
 import { AppError } from '../utils/AppError';
 import { HTTP_STATUS } from '../utils/constants';
-import { config } from '../config';
 
-// ─── Image Optimization via wsrv.nl CDN ──────────────────────────────────────
-// Proxies image URLs through a free, global CDN that auto-converts to WebP,
-// resizes, and caches at the edge. Zero cost, no signup.
-function optimizeImageUrl(url: string | null | undefined, width = 400): string | null {
+function optimizeImageUrl(url: string | null | undefined, _width = 400): string | null {
   if (!url) return null;
-  // Skip if already optimized or is a data URI
-  if (url.startsWith('data:') || url.includes('wsrv.nl')) return url;
-  // Only proxy in production to avoid issues in local dev
-  if (config.env === 'development') return url;
-  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&q=80&output=webp&default=placeholder`;
+  return url;
 }
 
 // ─── Public Categories ───────────────────────────────────────────────────────

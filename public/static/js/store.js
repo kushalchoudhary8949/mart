@@ -192,5 +192,19 @@ const UI = (() => {
     `
   }
 
-  return { money, toast, escapeHtml, starRating, discountPercent, timeAgo, formatDateTime, loadingSpinner, emptyState, errorState }
+  const placeholderImage = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none"><rect width="400" height="400" fill="%23f3f4f6"/><path d="M160 150C160 138.954 168.954 130 180 130H220C231.046 130 240 138.954 240 150V160H160V150Z" fill="%2316a34a"/><path d="M140 160H260L248 270H152L140 160Z" fill="%2322c55e"/><text x="50%" y="80%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="16" font-weight="600">FreshCart</text></svg>'
+
+  function resolveProductImage(p) {
+    if (!p) return placeholderImage
+    if (typeof p === 'string') return p || placeholderImage
+    if (p.image) return p.image
+    if (p.thumbnail) return p.thumbnail
+    if (Array.isArray(p.images) && p.images.length > 0) {
+      const img = p.images[0]
+      return typeof img === 'string' ? img : (img.url || placeholderImage)
+    }
+    return placeholderImage
+  }
+
+  return { money, toast, escapeHtml, starRating, discountPercent, timeAgo, formatDateTime, loadingSpinner, emptyState, errorState, placeholderImage, resolveProductImage }
 })()

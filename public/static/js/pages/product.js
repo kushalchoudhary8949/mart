@@ -48,13 +48,13 @@ const ProductPage = (() => {
   function renderProduct(p, related) {
     const discount = UI.discountPercent(p.price, p.mrp)
     const inWishlist = Store.state.wishlistIds.has(p.id)
-    const outOfStock = p.stock <= 0
-    const images = p.images || [p.image]
+    const resolvedImage = UI.resolveProductImage(p)
+    const images = (Array.isArray(p.images) && p.images.length > 0) ? p.images.map(img => typeof img === 'string' ? img : img.url) : [resolvedImage]
     let activeImgIdx = 0
 
     const renderGalleryHtml = () => `
       <div class="relative aspect-square max-w-md mx-auto bg-gray-50">
-        <img id="product-gallery-img" src="${images[activeImgIdx]}" alt="${UI.escapeHtml(p.name)}" decoding="async" class="w-full h-full object-cover" />
+        <img id="product-gallery-img" src="${images[activeImgIdx] || UI.placeholderImage}" alt="${UI.escapeHtml(p.name)}" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null; this.src=UI.placeholderImage" />
         ${discount > 0 ? `<span class="absolute top-3 left-3 bg-accent-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">${discount}% OFF</span>` : ''}
         <button data-action="toggle-wishlist-detail" class="absolute top-3 right-3 w-10 h-10 rounded-full bg-white shadow flex items-center justify-center ${inWishlist ? 'text-red-500' : 'text-gray-400'}">
           <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i>

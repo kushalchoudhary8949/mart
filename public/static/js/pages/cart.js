@@ -140,9 +140,10 @@ const CartPage = (() => {
   }
 
   function cartItemRow(it) {
+    const imgUrl = UI.resolveProductImage(it)
     return `
       <div class="bg-white border border-gray-100 rounded-2xl p-3 flex gap-3 items-center" data-cart-product-id="${it.product_id}">
-        <a href="#/product/${it.slug}"><img src="${it.image}" loading="lazy" decoding="async" class="w-16 h-16 rounded-xl object-cover shrink-0" /></a>
+        <a href="#/product/${it.slug}"><img src="${imgUrl}" loading="lazy" decoding="async" class="w-16 h-16 rounded-xl object-cover shrink-0" onerror="this.onerror=null; this.src=UI.placeholderImage" /></a>
         <div class="flex-1 min-w-0">
           <a href="#/product/${it.slug}"><p class="text-sm font-medium text-gray-800 line-clamp-1">${UI.escapeHtml(it.name)}</p></a>
           <p class="text-xs text-gray-400">${it.unit}</p>

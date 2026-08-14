@@ -50,9 +50,10 @@ const HomePage = (() => {
         let activeIdx = 0
         const renderSlider = () => {
           const b = banners[activeIdx]
+          const bannerImg = b.image || UI.placeholderImage
           bannerContainer.innerHTML = `
-            <div class="rounded-2xl text-white p-5 relative overflow-hidden h-40 flex flex-col justify-center bg-cover bg-center transition-all duration-500" 
-              style="background-image: linear-gradient(to right, rgba(20, 83, 45, 0.9), rgba(34, 197, 94, 0.7)), url('${b.image}')">
+            <div class="rounded-2xl text-white p-5 relative overflow-hidden h-40 flex flex-col justify-center bg-cover bg-center transition-all duration-500 bg-brand-700" 
+              style="background-image: linear-gradient(to right, rgba(20, 83, 45, 0.9), rgba(34, 197, 94, 0.7)), url('${bannerImg}')">
               <div class="relative z-10 max-w-[70%]">
                 <p class="text-xs font-semibold uppercase tracking-wide text-brand-100 mb-1">${UI.escapeHtml(b.subtitle || '')}</p>
                 <h2 class="text-lg font-extrabold leading-snug mb-2 line-clamp-2">${UI.escapeHtml(b.title)}</h2>

@@ -1,14 +1,10 @@
 import { prisma } from '../config/database';
 import { redis } from '../config/redis';
 import { Prisma } from '@prisma/client';
-import { config } from '../config';
 
-// Re-use the same image optimization as catalog.service
-function optimizeImageUrl(url: string | null | undefined, width = 400): string | null {
+function optimizeImageUrl(url: string | null | undefined, _width = 400): string | null {
   if (!url) return null;
-  if (url.startsWith('data:') || url.includes('wsrv.nl')) return url;
-  if (config.env === 'development') return url;
-  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&q=80&output=webp&default=placeholder`;
+  return url;
 }
 
 const modeInsensitive = Prisma.QueryMode.insensitive;
