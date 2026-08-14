@@ -202,9 +202,9 @@ export async function searchProducts(filters: {
   const { q, category, featured, sort = 'relevance', page = 1, limit = 20 } = filters;
 
   if (!q || q.trim().length === 0) {
-    // If no query string, fall back to default database query
-    const { findMany } = await import('../repositories/product.repository');
-    return findMany({ categorySlug: category, featured, activeOnly: true, sort: sort as any, page, limit });
+    // If no query string, fall back to catalog query which properly formats images and pagination
+    const { queryProducts } = await import('./catalog.service');
+    return queryProducts({ category, featured, sort: sort === 'relevance' ? undefined : (sort as any), page, limit });
   }
 
   const cacheKey = `search:v2:${q.trim().toLowerCase()}:${category || ''}:${page}:${limit}:${sort}`;
