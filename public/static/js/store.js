@@ -208,3 +208,4 @@ const UI = (() => {
 
   return { money, toast, escapeHtml, starRating, discountPercent, timeAgo, formatDateTime, loadingSpinner, emptyState, errorState, placeholderImage, resolveProductImage }
 })()
+window.UI = UI
