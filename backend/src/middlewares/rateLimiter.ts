@@ -112,18 +112,24 @@ export const rateLimiter = rateLimit({
 export const otpRequestLimiter = rateLimit({
   ...authRateLimitOptions,
   store: new LazyRedisStore(),
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  keyGenerator: (req) => `${getIp(req)}:otp`,
+  windowMs: 5 * 60 * 1000, // 5 minute window
+  max: 20, // 20 requests per phone number
+  keyGenerator: (req) => {
+    const phone = req.body?.phone || req.query?.phone || '';
+    return phone ? `phone:${phone}:otp` : `${getIp(req)}:otp`;
+  },
   skip: () => config.env === 'development' || config.env === 'test',
 });
 
 export const loginAttemptLimiter = rateLimit({
   ...authRateLimitOptions,
   store: new LazyRedisStore(),
-  windowMs: 15 * 60 * 1000,
-  max: 60,
-  keyGenerator: (req) => `${getIp(req)}:${req.body?.phone || ''}:login`,
+  windowMs: 5 * 60 * 1000, // 5 minute window
+  max: 60, // 60 attempts per phone number
+  keyGenerator: (req) => {
+    const phone = req.body?.phone || req.query?.phone || '';
+    return phone ? `phone:${phone}:login` : `${getIp(req)}:login`;
+  },
   skip: () => config.env === 'development' || config.env === 'test',
 });
 

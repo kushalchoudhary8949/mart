@@ -16,11 +16,24 @@ function clearExpiredEntries(now: number) {
   }
 }
 
-export function rateLimit(limit: number, windowMs: number) {
+export function rateLimit(
+  limit: number, 
+  windowMs: number, 
+  keyGenerator?: (c: Context<AppEnv>) => Promise<string> | string
+) {
   return async (c: Context<AppEnv>, next: Next) => {
     const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Real-IP') || '127.0.0.1'
     const route = c.req.path
-    const key = `${ip}:${route}`
+    
+    let identifier = ip
+    if (keyGenerator) {
+      try {
+        const customKey = await keyGenerator(c)
+        if (customKey) identifier = customKey
+      } catch (_) {}
+    }
+
+    const key = `${identifier}:${route}`
     const now = Date.now()
 
     clearExpiredEntries(now)
@@ -42,7 +55,7 @@ export function rateLimit(limit: number, windowMs: number) {
     c.header('X-RateLimit-Reset', String(Math.ceil((limitInfo.resetTime - now) / 1000)))
 
     if (limitInfo.count > limit) {
-      return c.json({ error: 'Too many requests, please try again later.' }, 429)
+      return c.json({ error: 'Too many requests for this mobile number. Please try again in a few moments.' }, 429)
     }
 
     await next()

@@ -63,8 +63,17 @@ const handleCustomerLogin = async (c: any) => {
   return c.json({ success: true, token, user })
 }
 
-auth.post('/customer-login', rateLimit(15, 60000), handleCustomerLogin)
-auth.post('/login-direct', rateLimit(15, 60000), handleCustomerLogin)
+const phoneKeyGenerator = async (c: any) => {
+  try {
+    const cloned = c.req.raw.clone()
+    const body = await cloned.json().catch(() => ({}))
+    if (body?.phone) return `phone:${body.phone}`
+  } catch (_) {}
+  return c.req.header('CF-Connecting-IP') || '127.0.0.1'
+}
+
+auth.post('/customer-login', rateLimit(30, 60000, phoneKeyGenerator), handleCustomerLogin)
+auth.post('/login-direct', rateLimit(30, 60000, phoneKeyGenerator), handleCustomerLogin)
 
 /**
  * POST /api/auth/otp/request
@@ -72,7 +81,7 @@ auth.post('/login-direct', rateLimit(15, 60000), handleCustomerLogin)
  * Generates and "sends" an OTP (SMS gateway not configured -> OTP is returned
  * in the response as `debug_otp` for demo/testing purposes only).
  */
-auth.post('/otp/request', rateLimit(5, 60000), async (c) => {
+auth.post('/otp/request', rateLimit(20, 60000, phoneKeyGenerator), async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const phone = normalizePhone(body.phone)
   const purpose = body.purpose === 'signup' ? 'signup' : 'login'
