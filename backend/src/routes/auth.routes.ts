@@ -3,6 +3,7 @@ import { validate } from '../middlewares/validate';
 import { authenticate } from '../middlewares/auth';
 import { loginAttemptLimiter, otpRequestLimiter } from '../middlewares/rateLimiter';
 import {
+  customerLoginSchema,
   otpRequestSchema,
   otpVerifySchema,
   loginSchema,
@@ -10,6 +11,7 @@ import {
   logoutSchema,
 } from '../validators/auth.validator';
 import {
+  customerLogin,
   otpRequest,
   otpVerify,
   login,
@@ -24,7 +26,11 @@ const router = Router();
 
 // ─── Public Routes ───────────────────────────────────────────────────────────
 
-// Customer OTP flow
+// Customer Direct Login (Name + Phone, No OTP)
+router.post('/customer-login', loginAttemptLimiter, validate(customerLoginSchema), customerLogin);
+router.post('/login-direct', loginAttemptLimiter, validate(customerLoginSchema), customerLogin);
+
+// Customer OTP flow (legacy / alternate)
 router.post('/send-otp', otpRequestLimiter, validate(otpRequestSchema), otpRequest);
 
 // Backwards-compatible alias for existing clients.

@@ -7,6 +7,17 @@ const phoneSchema = z
   .trim()
   .regex(/^[6-9]\d{9}$/, 'Invalid phone number. Must be a 10-digit Indian mobile number.');
 
+// ─── Customer Direct Login Schema (Name + Phone, No OTP) ───────────────────
+
+export const customerLoginSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, 'Name is required and must be at least 2 characters.')
+    .max(100, 'Name must be 100 characters or less.'),
+  phone: phoneSchema,
+});
+
 // ─── OTP Request Schema ─────────────────────────────────────────────────────
 
 export const otpRequestSchema = z.object({

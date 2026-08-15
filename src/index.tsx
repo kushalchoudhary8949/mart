@@ -38,17 +38,25 @@ app.all('/api/*', async (c, next) => {
     }
   }
 
+  const hasBody = !['GET', 'HEAD'].includes(c.req.method)
+  const reqBody = hasBody ? await c.req.raw.arrayBuffer() : undefined
+
   for (const backend of backends) {
     try {
       const target = `${backend}/api/v1${pathAndSearch}`
       const response = await fetch(target, { 
         method: c.req.method, 
         headers, 
-        body: ['GET', 'HEAD'].includes(c.req.method) ? undefined : c.req.raw.body, 
+        body: reqBody ? reqBody.slice(0) : undefined, 
         duplex: 'half' as never 
       })
 
       if (!response.ok && response.status >= 500 && backend !== backends[backends.length - 1]) {
+        continue
+      }
+
+      // If remote backend returns 404 for an endpoint that exists locally in D1 (like customer-login before deploy), fall back
+      if (response.status === 404 && backend.includes('onrender.com')) {
         continue
       }
 
@@ -64,6 +72,15 @@ app.all('/api/*', async (c, next) => {
       // Try next backend fallback if available
       continue
     }
+  }
+
+  // If falling back to local D1 routes and we consumed the body, re-create the request so c.req.json() works
+  if (reqBody) {
+    c.req.raw = new Request(c.req.raw.url, {
+      method: c.req.raw.method,
+      headers: c.req.raw.headers,
+      body: reqBody
+    })
   }
 
   return next()

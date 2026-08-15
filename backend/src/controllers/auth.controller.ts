@@ -3,6 +3,17 @@ import { catchAsync } from '../middlewares/asyncWrapper';
 import { HTTP_STATUS } from '../utils/constants';
 import * as authService from '../services/auth.service';
 
+// ─── POST /auth/customer-login ──────────────────────────────────────────────
+export const customerLogin = catchAsync(async (req: Request, res: Response) => {
+  const { name, phone } = req.body;
+  const result = await authService.customerLogin(name, phone);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: result,
+  });
+});
+
 // ─── POST /auth/send-otp ────────────────────────────────────────────────────
 
 export const otpRequest = catchAsync(async (req: Request, res: Response) => {

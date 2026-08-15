@@ -143,6 +143,7 @@ const Api = (() => {
     setRefreshToken,
     errMsg,
     // auth
+    customerLogin: (name, phone) => client.post('/auth/customer-login', { name, phone }),
     requestOtp: (phone, purpose) => client.post('/auth/otp/request', { phone, purpose }),
     verifyOtp: (phone, code, name) => client.post('/auth/otp/verify', { phone, code, name }),
     me: () => client.get('/auth/me'),

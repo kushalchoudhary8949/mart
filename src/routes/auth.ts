@@ -10,6 +10,63 @@ const OTP_TTL_MINUTES = 5
 const SESSION_TTL_DAYS = 30
 
 /**
+ * POST /api/auth/customer-login (and /api/auth/login-direct)
+ * body: { name: string, phone: string }
+ * Direct customer login / signup with Name (mandatory) and Phone (no OTP).
+ */
+const handleCustomerLogin = async (c: any) => {
+  const body = await c.req.json().catch(() => ({}))
+  const rawName = String(body.name || '').trim()
+  const phone = normalizePhone(body.phone)
+
+  if (!rawName || rawName.length < 2) {
+    return c.json({ error: 'Please enter your full name (minimum 2 characters).' }, 400)
+  }
+
+  if (!phone || !isValidPhone(phone)) {
+    return c.json({ error: 'Please provide a valid 10-digit Indian mobile number.' }, 400)
+  }
+
+  const name = rawName.substring(0, 100)
+
+  // Find or create user
+  let user = await c.env.DB.prepare(`SELECT id, phone, name, email FROM users WHERE phone = ?`)
+    .bind(phone)
+    .first<{ id: number; phone: string; name: string | null; email: string | null }>()
+
+  if (!user) {
+    const insertResult = await c.env.DB.prepare(
+      `INSERT INTO users (phone, name) VALUES (?, ?)`
+    )
+      .bind(phone, name)
+      .run()
+    const userId = insertResult.meta.last_row_id
+    user = { id: userId, phone, name, email: null }
+
+    await c.env.DB.prepare(
+      `INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)`
+    )
+      .bind(userId, 'Welcome to Vrindavan Mart! 🛒', 'Thanks for signing up. Use code WELCOME50 for ₹50 off your first order.', 'promo')
+      .run()
+  } else {
+    await c.env.DB.prepare(`UPDATE users SET name = ? WHERE id = ?`).bind(name, user.id).run()
+    user.name = name
+  }
+
+  const token = generateToken(32)
+  const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 86400000).toISOString().replace('T', ' ').substring(0, 19)
+
+  await c.env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
+    .bind(token, user.id, expiresAt)
+    .run()
+
+  return c.json({ success: true, token, user })
+}
+
+auth.post('/customer-login', rateLimit(15, 60000), handleCustomerLogin)
+auth.post('/login-direct', rateLimit(15, 60000), handleCustomerLogin)
+
+/**
  * POST /api/auth/otp/request
  * body: { phone, purpose: 'login'|'signup' }
  * Generates and "sends" an OTP (SMS gateway not configured -> OTP is returned

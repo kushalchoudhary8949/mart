@@ -106,6 +106,63 @@ async function createTokenPair(user: { id: number; phone: string; role: Role }) 
   return { accessToken, refreshToken };
 }
 
+// ─── Customer Direct Login (Name + Phone, No OTP) ───────────────────────────
+
+export async function customerLogin(name: string, phone: string) {
+  const normalized = normalizePhone(phone);
+  if (!normalized) {
+    throw new AppError('Invalid phone number. Must be a 10-digit Indian mobile number.', HTTP_STATUS.BAD_REQUEST);
+  }
+  const cleanName = (name || '').trim();
+  if (!cleanName || cleanName.length < 2) {
+    throw new AppError('Full name is required and must be at least 2 characters.', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  const { prisma } = await import('../config/database');
+
+  let user = await prisma.user.findUnique({ where: { phone: normalized } });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        phone: normalized,
+        name: cleanName,
+        role: Role.CUSTOMER,
+        isVerified: true,
+        isActive: true,
+      },
+    });
+  } else {
+    if (user.isBlocked) {
+      throw new AppError('Your account has been blocked. Contact support.', HTTP_STATUS.FORBIDDEN);
+    }
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: cleanName,
+        isVerified: true,
+      },
+    });
+  }
+
+  const { accessToken, refreshToken } = await createTokenPair(user);
+
+  logger.info(`User ${user.id} (${user.name}) logged in directly with name and phone.`);
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      phone: user.phone,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    },
+  };
+}
+
 // ─── OTP Request ─────────────────────────────────────────────────────────────
 
 export async function requestOtp(phone: string) {
