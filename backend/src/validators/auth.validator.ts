@@ -33,6 +33,7 @@ export const otpVerifySchema = z.object({
     .trim()
     .length(6, 'OTP must be exactly 6 digits.')
     .regex(/^\d{6}$/, 'OTP must contain only digits.'),
+  name: z.string().trim().max(100).optional(),
 });
 
 // ─── Admin Login Schema ─────────────────────────────────────────────────────

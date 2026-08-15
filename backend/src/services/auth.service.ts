@@ -184,7 +184,7 @@ export async function requestOtp(phone: string) {
 
 // ─── OTP Verify (Customer Login/Signup) ──────────────────────────────────────
 
-export async function verifyOtpAndLogin(phone: string, code: string) {
+export async function verifyOtpAndLogin(phone: string, code: string, name?: string) {
   const normalized = normalizePhone(phone);
   if (!normalized) {
     throw new AppError('Invalid phone number.', HTTP_STATUS.BAD_REQUEST);
@@ -194,7 +194,7 @@ export async function verifyOtpAndLogin(phone: string, code: string) {
   await otpService.verifyOtp(normalized, code);
 
   // 2. Create a CUSTOMER user when needed, and mark existing users verified.
-  const user = await userRepo.findOrCreateVerifiedByPhone(normalized);
+  let user = await userRepo.findOrCreateVerifiedByPhone(normalized);
 
   if (user.isBlocked) {
     throw new AppError(
@@ -203,10 +203,18 @@ export async function verifyOtpAndLogin(phone: string, code: string) {
     );
   }
 
+  if (name && name.trim()) {
+    const { prisma } = await import('../config/database');
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { name: name.trim() },
+    });
+  }
+
   // 3. Issue token pair
   const { accessToken, refreshToken } = await createTokenPair(user);
 
-  logger.info(`User ${user.id} logged in via OTP.`);
+  logger.info(`User ${user.id} (${user.name}) logged in via OTP.`);
 
   return {
     accessToken,
@@ -214,6 +222,8 @@ export async function verifyOtpAndLogin(phone: string, code: string) {
     user: {
       id: user.id,
       phone: user.phone,
+      name: user.name,
+      email: user.email,
       role: user.role,
       isVerified: user.isVerified,
     },

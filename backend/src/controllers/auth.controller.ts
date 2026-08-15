@@ -29,8 +29,8 @@ export const otpRequest = catchAsync(async (req: Request, res: Response) => {
 // ─── POST /auth/verify-otp ──────────────────────────────────────────────────
 
 export const otpVerify = catchAsync(async (req: Request, res: Response) => {
-  const { phone, code } = req.body;
-  const result = await authService.verifyOtpAndLogin(phone, code);
+  const { phone, code, name } = req.body;
+  const result = await authService.verifyOtpAndLogin(phone, code, name);
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
