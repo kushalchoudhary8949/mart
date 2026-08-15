@@ -255,3 +255,4 @@ const CartPage = (() => {
 
   return { render }
 })()
+window.CartPage = CartPage

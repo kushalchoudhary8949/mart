@@ -44,6 +44,7 @@
   Router.add('/', HomePage.render)
   Router.add('/login', AuthPage.render)
   Router.add('/categories', CategoriesPage.render)
+  Router.add('/categories/:slug', CategoryDetailPage.render)
   Router.add('/category/:slug', CategoryDetailPage.render)
   Router.add('/search', SearchPage.render)
   Router.add('/product/:slug', ProductPage.render)

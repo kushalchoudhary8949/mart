@@ -96,3 +96,5 @@ const CategoryDetailPage = (() => {
 
   return { render }
 })()
+window.CategoriesPage = CategoriesPage
+window.CategoryDetailPage = CategoryDetailPage

@@ -51,13 +51,16 @@ const HomePage = (() => {
         const renderSlider = () => {
           const b = banners[activeIdx]
           const bannerImg = b.image || UI.placeholderImage
+          const rawLink = b.cta_link || b.ctaLink || '#/categories'
+          const bannerLink = rawLink.startsWith('#') ? rawLink : (rawLink.startsWith('/') ? '#' + rawLink : '#/' + rawLink)
+          const bannerText = b.cta_text || b.ctaText || 'Shop Now'
           bannerContainer.innerHTML = `
             <div class="rounded-2xl text-white p-5 relative overflow-hidden h-40 flex flex-col justify-center bg-cover bg-center transition-all duration-500 bg-brand-700" 
               style="background-image: linear-gradient(to right, rgba(20, 83, 45, 0.9), rgba(34, 197, 94, 0.7)), url('${bannerImg}')">
               <div class="relative z-10 max-w-[70%]">
                 <p class="text-xs font-semibold uppercase tracking-wide text-brand-100 mb-1">${UI.escapeHtml(b.subtitle || '')}</p>
                 <h2 class="text-lg font-extrabold leading-snug mb-2 line-clamp-2">${UI.escapeHtml(b.title)}</h2>
-                <a href="${b.cta_link || '#/categories'}" class="inline-block bg-white text-brand-700 text-xs font-bold px-4 py-2 rounded-full mt-1">${UI.escapeHtml(b.cta_text || 'Shop Now')}</a>
+                <a href="${bannerLink}" class="inline-block bg-white text-brand-700 text-xs font-bold px-4 py-2 rounded-full mt-1">${UI.escapeHtml(bannerText)}</a>
               </div>
               <div class="absolute bottom-2 right-4 flex gap-1.5 z-20">
                 ${banners.map((_, i) => `
@@ -202,3 +205,4 @@ const HomePage = (() => {
 
   return { render, bindProductCardActions, bindGlobalSearch }
 })()
+window.HomePage = HomePage

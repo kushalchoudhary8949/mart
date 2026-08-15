@@ -190,3 +190,4 @@ const Api = (() => {
     deleteAddress: (id) => client.delete(`/addresses/${id}`)
   }
 })()
+window.Api = Api

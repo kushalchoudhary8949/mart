@@ -105,3 +105,4 @@ const ProfilePage = (() => {
 
   return { render }
 })()
+window.ProfilePage = ProfilePage

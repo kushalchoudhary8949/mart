@@ -128,3 +128,4 @@ const Components = (() => {
 
   return { header, bottomNav, productCard, productCardSkeleton, categoryChip, requireLoginPrompt }
 })()
+window.Components = Components

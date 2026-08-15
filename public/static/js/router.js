@@ -57,3 +57,4 @@ const Router = (() => {
 
   return { add, navigate, start, resolve }
 })()
+window.Router = Router

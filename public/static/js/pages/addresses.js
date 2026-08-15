@@ -138,3 +138,4 @@ const AddressesPage = (() => {
 
   return { render }
 })()
+window.AddressesPage = AddressesPage

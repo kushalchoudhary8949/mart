@@ -423,3 +423,5 @@ const OrderTrackingPage = (() => {
 
   return { render }
 })()
+window.OrderSuccessPage = OrderSuccessPage
+window.OrderTrackingPage = OrderTrackingPage

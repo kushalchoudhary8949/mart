@@ -360,3 +360,4 @@ const CheckoutPage = (() => {
 
   return { render }
 })()
+window.CheckoutPage = CheckoutPage

@@ -170,3 +170,4 @@ const ProductPage = (() => {
 
   return { render }
 })()
+window.ProductPage = ProductPage

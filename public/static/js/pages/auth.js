@@ -421,3 +421,4 @@ const AuthPage = (() => {
 
   return { render }
 })()
+window.AuthPage = AuthPage

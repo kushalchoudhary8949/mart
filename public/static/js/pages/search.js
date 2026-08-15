@@ -98,3 +98,4 @@ const SearchPage = (() => {
 
   return { render }
 })()
+window.SearchPage = SearchPage

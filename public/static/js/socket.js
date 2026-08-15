@@ -25,3 +25,4 @@ const Realtime = (() => {
   function disconnect() { if (socket) socket.disconnect(); socket = null }
   return { connect, disconnect }
 })()
+window.Realtime = Realtime

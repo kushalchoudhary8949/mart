@@ -229,3 +229,4 @@ const OrdersListPage = (() => {
 
   return { render }
 })()
+window.OrdersListPage = OrdersListPage

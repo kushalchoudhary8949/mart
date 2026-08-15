@@ -72,3 +72,4 @@ const Actions = (() => {
 
   return { addToCart, toggleWishlist, bindProductCardActions }
 })()
+window.Actions = Actions

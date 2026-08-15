@@ -84,3 +84,4 @@ const NotificationsPage = (() => {
 
   return { render }
 })()
+window.NotificationsPage = NotificationsPage

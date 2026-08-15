@@ -45,3 +45,4 @@ const CouponsPage = (() => {
   }
   return { render }
 })()
+window.CouponsPage = CouponsPage

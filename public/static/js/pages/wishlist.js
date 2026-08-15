@@ -31,3 +31,4 @@ const WishlistPage = (() => {
   }
   return { render }
 })()
+window.WishlistPage = WishlistPage
