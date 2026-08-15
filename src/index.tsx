@@ -24,7 +24,7 @@ app.all('/api/*', async (c, next) => {
   const backends = customBackend 
     ? [customBackend]
     : isLocal 
-      ? ['http://localhost:5001', 'https://vrindawan-mart-redis.onrender.com']
+      ? ['http://127.0.0.1:5001', 'https://vrindawan-mart-redis.onrender.com']
       : ['https://vrindawan-mart-redis.onrender.com']
 
   const pathAndSearch = `${c.req.path.slice(4)}${new URL(c.req.url).search}`
@@ -44,11 +44,15 @@ app.all('/api/*', async (c, next) => {
   for (const backend of backends) {
     try {
       const target = `${backend}/api/v1${pathAndSearch}`
+      const timeoutMs = (backend.includes('localhost') || backend.includes('127.0.0.1')) ? 1200 : 5000
+      const signal = AbortSignal.timeout(timeoutMs)
+
       const response = await fetch(target, { 
         method: c.req.method, 
         headers, 
         body: reqBody ? reqBody.slice(0) : undefined, 
-        duplex: 'half' as never 
+        duplex: 'half' as never,
+        signal
       })
 
       // If remote backend returns 401, 403, 404, or 5xx (e.g. invalid JWT from D1 session or route not on Render), fall back to D1

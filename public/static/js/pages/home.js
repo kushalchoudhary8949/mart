@@ -149,8 +149,9 @@ const HomePage = (() => {
     try {
       const { data } = await Api.getProducts({ featured: 1, limit: 6 })
       const container = document.getElementById('home-featured')
-      container.innerHTML = data.products.length
-        ? data.products.map((p) => Components.productCard(p)).join('')
+      const products = data?.products || data?.data?.products || []
+      container.innerHTML = products.length
+        ? products.map((p) => Components.productCard(p)).join('')
         : `<p class="text-sm text-gray-400 col-span-full text-center py-6">No featured products right now.</p>`
       bindProductCardActions(container)
     } catch (e) {
@@ -182,7 +183,10 @@ const HomePage = (() => {
         .then(({ data }) => {
           const el = document.getElementById(`cat-section-${cat.id}`)
           if (!el) return
-          el.innerHTML = data.products.map((p) => Components.productCard(p)).join('')
+          const products = data?.products || data?.data?.products || []
+          el.innerHTML = products.length
+            ? products.map((p) => Components.productCard(p)).join('')
+            : `<p class="text-xs text-gray-400 col-span-full py-4 text-center">No products in this category yet.</p>`
           bindProductCardActions(el)
         })
         .catch(() => {})

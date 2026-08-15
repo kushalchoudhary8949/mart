@@ -2,7 +2,7 @@
 // API layer - wraps axios, manages auth token, handles errors
 // ============================================================
 const Api = (() => {
-  const client = axios.create({ baseURL: '/api', timeout: 15000 })
+  const client = axios.create({ baseURL: '/api', timeout: 25000 })
 
   function getToken() {
     return localStorage.getItem('fc_token') || null

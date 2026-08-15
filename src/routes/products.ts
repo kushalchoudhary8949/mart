@@ -75,7 +75,7 @@ products.get('/products', async (c) => {
     conditions.push(`(p.name LIKE ? OR p.description LIKE ?)`)
     params.push(`%${q}%`, `%${q}%`)
   }
-  if (featured === '1') {
+  if (featured === '1' || featured === 'true') {
     conditions.push(`p.is_featured = 1`)
   }
 

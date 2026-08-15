@@ -59,38 +59,48 @@ const Components = (() => {
   }
 
   function productCard(p) {
-    const discount = UI.discountPercent(p.price, p.mrp)
-    const inWishlist = Store.state.wishlistIds.has(p.id)
-    const outOfStock = p.stock <= 0
+    if (!p) return ''
+    const price = Number(p.price || 0)
+    const mrp = Number(p.mrp || 0)
+    const discount = UI.discountPercent(price, mrp)
+    const inWishlist = Boolean(Store?.state?.wishlistIds?.has && Store.state.wishlistIds.has(p.id))
+    const outOfStock = (p.stock !== undefined && p.stock !== null) ? Number(p.stock) <= 0 : false
     const imgUrl = UI.resolveProductImage(p)
+    const name = UI.escapeHtml(p.name || '')
+    const unit = UI.escapeHtml(p.unit || '')
+    const rating = Number(p.rating || 0)
+    const ratingCount = Number(p.rating_count || p.ratingCount || 0)
+    const slug = p.slug || ''
+    const id = p.id || 0
+
     return `
-    <div class="product-card bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow relative group" data-product-id="${p.id}">
-      <a href="#/product/${p.slug}" class="block">
+    <div class="product-card bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow relative group" data-product-id="${id}">
+      <a href="#/product/${slug}" class="block">
         <div class="relative aspect-square rounded-t-2xl overflow-hidden bg-gray-50">
-          <img src="${imgUrl}" alt="${UI.escapeHtml(p.name)}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src=UI.placeholderImage" />
+          <img src="${imgUrl}" alt="${name}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src=UI.placeholderImage" />
           ${discount > 0 ? `<span class="absolute top-2 left-2 bg-accent-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">${discount}% OFF</span>` : ''}
           ${outOfStock ? `<div class="absolute inset-0 bg-white/70 flex items-center justify-center"><span class="text-xs font-semibold text-gray-600 bg-white px-2 py-1 rounded">Out of Stock</span></div>` : ''}
         </div>
       </a>
-      <button data-action="toggle-wishlist" data-id="${p.id}" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-sm ${inWishlist ? 'text-red-500' : 'text-gray-400'}">
+      <button data-action="toggle-wishlist" data-id="${id}" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-sm ${inWishlist ? 'text-red-500' : 'text-gray-400'}">
         <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i>
       </button>
       <div class="p-3">
-        <a href="#/product/${p.slug}" class="block">
-          <p class="text-sm font-medium text-gray-800 line-clamp-2 leading-snug mb-1">${UI.escapeHtml(p.name)}</p>
-          <p class="text-xs text-gray-400 mb-1">${p.unit}</p>
-          <div class="flex items-center gap-1 mb-1.5">${UI.starRating(p.rating)}<span class="text-[11px] text-gray-400">(${p.rating_count || 0})</span></div>
+        <a href="#/product/${slug}" class="block">
+          <p class="text-sm font-medium text-gray-800 line-clamp-2 leading-snug mb-1">${name}</p>
+          <p class="text-xs text-gray-400 mb-1">${unit}</p>
+          <div class="flex items-center gap-1 mb-1.5">${UI.starRating(rating)}<span class="text-[11px] text-gray-400">(${ratingCount})</span></div>
         </a>
         <div class="flex items-center justify-between">
           <div>
-            <span class="font-bold text-gray-900 text-sm">${UI.money(p.price)}</span>
-            ${p.mrp > p.price ? `<span class="text-xs text-gray-400 line-through ml-1">${UI.money(p.mrp)}</span>` : ''}
+            <span class="font-bold text-gray-900 text-sm">${UI.money(price)}</span>
+            ${mrp > price ? `<span class="text-xs text-gray-400 line-through ml-1">${UI.money(mrp)}</span>` : ''}
           </div>
         </div>
         <div class="mt-2">
           ${outOfStock
             ? `<button disabled class="w-full bg-gray-200 text-gray-400 text-xs font-semibold py-2 rounded-lg cursor-not-allowed">Unavailable</button>`
-            : `<button data-action="add-to-cart" data-id="${p.id}" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
+            : `<button data-action="add-to-cart" data-id="${id}" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
                 <i class="fas fa-plus mr-1"></i>Add to Cart
               </button>`
           }
