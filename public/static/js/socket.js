@@ -7,7 +7,12 @@ const Realtime = (() => {
       ? 'http://localhost:5001'
       : 'https://vrindawan-mart-redis.onrender.com'
     socket = window.io(socketUrl, { auth: { token: Api.getToken() } })
-    socket.on('stockUpdated', () => Router.resolve())
+    socket.on('stockUpdated', () => {
+      const h = window.location.hash || ''
+      if (!h || h === '#/' || h.startsWith('#/category') || h.startsWith('#/search') || h.startsWith('#/product/')) {
+        Router.resolve()
+      }
+    })
     socket.on('notification', (payload) => {
       UI.toast(payload.title || "New notification!", 'info')
       Store.refreshNotifications()

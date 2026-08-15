@@ -51,12 +51,12 @@ app.all('/api/*', async (c, next) => {
         duplex: 'half' as never 
       })
 
-      if (!response.ok && response.status >= 500 && backend !== backends[backends.length - 1]) {
-        continue
-      }
-
-      // If remote backend returns 404 for an endpoint that exists locally in D1 (like customer-login before deploy), fall back
-      if (response.status === 404 && backend.includes('onrender.com')) {
+      // If remote backend returns 401, 403, 404, or 5xx (e.g. invalid JWT from D1 session or route not on Render), fall back to D1
+      if (!response.ok && backend.includes('onrender.com')) {
+        if (response.status === 401 || response.status === 403 || response.status === 404 || response.status >= 500) {
+          continue
+        }
+      } else if (!response.ok && response.status >= 500 && backend !== backends[backends.length - 1]) {
         continue
       }
 
