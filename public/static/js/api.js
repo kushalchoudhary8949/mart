@@ -175,6 +175,7 @@ const Api = (() => {
     getOrders: (params) => client.get('/orders', { params }),
     getOrder: (id) => client.get(`/orders/${id}`),
     trackOrder: (id) => client.get(`/orders/${id}/track`),
+    verifyDelivery: (id, pin) => client.post(`/orders/${id}/verify-delivery`, { pin }),
     cancelOrder: (id) => client.post(`/orders/${id}/cancel`),
     reorder: (id) => client.post(`/orders/${id}/reorder`),
     rateOrder: (id, rating, comment) => client.post(`/orders/${id}/rate`, { rating, comment }),

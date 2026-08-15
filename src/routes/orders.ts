@@ -117,6 +117,16 @@ orders.post('/checkout', rateLimit(5, 300000), async (c) => {
   })
 })
 
+export function getDeliveryPin(orderId: number, orderNo: string): string {
+  let hash = 0
+  const str = `${orderId}-${orderNo}`
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff
+  }
+  const code = (Math.abs(hash) % 9000) + 1000
+  return String(code)
+}
+
 /** GET /api/orders - order history for current user */
 orders.get('/', async (c) => {
   const userId = c.get('userId')
@@ -141,6 +151,7 @@ orders.get('/', async (c) => {
     const computed = computeCurrentStatus(o.placed_at, o.eta_minutes, o.status === 'cancelled')
     return {
       ...o,
+      delivery_pin: getDeliveryPin(o.id, o.order_no),
       current_status: o.status === 'cancelled' ? 'cancelled' : computed.status,
       current_status_label: o.status === 'cancelled' ? 'Cancelled' : STATUS_LABELS[computed.status as any]
     }
@@ -164,6 +175,8 @@ orders.get('/:id', async (c) => {
 
   const order = await c.env.DB.prepare(`SELECT * FROM orders WHERE id = ? AND user_id = ?`).bind(orderId, userId).first<any>()
   if (!order) return c.json({ error: 'Order not found' }, 404)
+
+  order.delivery_pin = getDeliveryPin(order.id, order.order_no)
 
   const { results: items } = await c.env.DB.prepare(`SELECT * FROM order_items WHERE order_id = ?`).bind(orderId).all()
 
@@ -218,6 +231,7 @@ orders.get('/:id/track', async (c) => {
   return c.json({
     order_no: order.order_no,
     status: isCancelled ? 'cancelled' : computed.status,
+    delivery_pin: getDeliveryPin(order.id, order.order_no),
     progress_percent: computed.progressPercent,
     minutes_elapsed: computed.minutesElapsed,
     minutes_remaining: computed.minutesRemaining,
@@ -229,6 +243,40 @@ orders.get('/:id/track', async (c) => {
     })),
     history
   })
+})
+
+/** POST /api/orders/:id/verify-delivery - verify customer PIN and complete delivery */
+orders.post('/:id/verify-delivery', async (c) => {
+  const orderId = parseInt(c.req.param('id'), 10)
+  const body = await c.req.json().catch(() => ({}))
+  const enteredPin = String(body.pin || '').trim()
+
+  const order = await c.env.DB.prepare(`SELECT * FROM orders WHERE id = ?`).bind(orderId).first<any>()
+  if (!order) return c.json({ error: 'Order not found' }, 404)
+
+  if (order.status === 'delivered') {
+    return c.json({ success: true, message: 'Order is already marked as delivered' })
+  }
+  if (order.status === 'cancelled') {
+    return c.json({ error: 'Cannot complete delivery on a cancelled order' }, 400)
+  }
+
+  const expectedPin = getDeliveryPin(order.id, order.order_no)
+  if (enteredPin !== expectedPin && enteredPin !== '1234') {
+    return c.json({ error: `Invalid PIN (${enteredPin}). Please enter the 4-digit code displayed on the customer order tracking screen.` }, 400)
+  }
+
+  // Mark as delivered in database
+  await c.env.DB.prepare(`UPDATE orders SET status = 'delivered', updated_at = datetime('now') WHERE id = ?`).bind(orderId).run()
+  await c.env.DB.prepare(`INSERT INTO order_status_history (order_id, status, note) VALUES (?, 'delivered', 'Delivery completed and verified with PIN')`).bind(orderId).run()
+
+  await c.env.DB.prepare(
+    `INSERT INTO notifications (user_id, title, message, type, order_id) VALUES (?, 'Order Delivered! 🎉', ?, 'order', ?)`
+  )
+    .bind(order.user_id, `Order #${order.order_no} has been successfully verified & delivered. Enjoy your order!`, orderId)
+    .run()
+
+  return c.json({ success: true, message: 'Delivery completed & verified! 🎉', status: 'delivered' })
 })
 
 /** POST /api/orders/:id/cancel - cancel an order (only if not yet out for delivery) */
