@@ -84,6 +84,7 @@ const OrderTrackingPage = (() => {
     const { order, items } = orderData
     const isCancelled = trackData.status === 'cancelled'
     const canCancel = !isCancelled && ['placed', 'confirmed', 'preparing'].includes(trackData.status)
+    const payment = UI.formatPaymentMethod(order.payment_method || order.paymentMethod, order.payment_status || order.paymentStatus, trackData.status)
 
     const container = document.getElementById('track-container')
     if (!container) return
@@ -144,6 +145,38 @@ const OrderTrackingPage = (() => {
         <p class="text-sm text-gray-600">${UI.escapeHtml(order.address_text || 'N/A')}</p>
       </div>
 
+      <!-- Payment & Transaction Details Card -->
+      <div class="bg-white border border-gray-100 rounded-2xl p-4 mb-4 shadow-xs">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+            <i class="fas fa-credit-card text-brand-600"></i> Payment & Billing Details
+          </h3>
+          <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full ${payment.statusColor}">
+            ${payment.status}
+          </span>
+        </div>
+        
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between py-1.5 border-b border-gray-50">
+            <span class="text-gray-500">Payment Mode</span>
+            <span class="font-bold text-gray-800 flex items-center gap-1.5">
+              <i class="fas ${payment.icon} ${payment.color}"></i>
+              ${payment.modeLabel}
+            </span>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-gray-50">
+            <span class="text-gray-500">Payment Status</span>
+            <span class="font-bold ${payment.isPaid ? 'text-emerald-700' : 'text-amber-700'}">
+              ${payment.isPaid ? '<i class="fas fa-circle-check mr-1"></i> Payment Verified' : '<i class="fas fa-clock mr-1"></i> Collect Cash on Delivery'}
+            </span>
+          </div>
+          <div class="flex items-center justify-between py-1.5">
+            <span class="text-gray-500">Transaction Ref</span>
+            <span class="font-mono text-gray-600 font-semibold">TXN-${order.order_no || order.orderNo}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-white border border-gray-100 rounded-2xl p-4 mb-4">
         <h3 class="font-semibold text-gray-800 mb-3 text-sm">Items (${items.length})</h3>
         <div class="space-y-3">
@@ -162,7 +195,10 @@ const OrderTrackingPage = (() => {
           <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>${UI.money(order.subtotal)}</span></div>
           ${order.discount > 0 ? `<div class="flex justify-between text-brand-600"><span>Discount</span><span>-${UI.money(order.discount)}</span></div>` : ''}
           <div class="flex justify-between text-gray-500"><span>Delivery Fee</span><span>${order.delivery_fee === 0 ? 'FREE' : UI.money(order.delivery_fee)}</span></div>
-          <div class="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-1.5"><span>Total</span><span>${UI.money(order.total)}</span></div>
+          <div class="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-1.5">
+            <span>Total ${payment.isPaid ? 'Paid' : 'Payable'}</span>
+            <span>${UI.money(order.total)}</span>
+          </div>
         </div>
       </div>
 

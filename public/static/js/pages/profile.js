@@ -30,6 +30,7 @@ const ProfilePage = (() => {
 
         <div class="bg-white border border-gray-100 rounded-2xl divide-y divide-gray-100 mb-5">
           ${menuRow('fa-receipt', 'My Orders', '#/orders')}
+          ${menuRow('fa-credit-card', 'Payment & Transaction History', '#/orders?filter=online')}
           ${menuRow('fa-heart', 'My Wishlist', '#/wishlist')}
           ${menuRow('fa-cart-shopping', 'My Cart', '#/cart')}
           ${menuRow('fa-bell', 'Notifications', '#/notifications')}
