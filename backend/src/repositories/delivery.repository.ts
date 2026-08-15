@@ -42,14 +42,14 @@ export function findOrder(id: number) {
 }
 
 export function listAvailableOrders() {
-  return prisma.order.findMany({ where: { status: { in: [OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP] }, deliveryPartnerId: null }, include: orderInclude, orderBy: { placedAt: 'asc' } });
+  return prisma.order.findMany({ where: { status: { in: [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP] }, deliveryPartnerId: null }, include: orderInclude, orderBy: { placedAt: 'asc' } });
 }
 
 export function listPartnerOrders(partnerId: number, completed = false) {
   return prisma.order.findMany({
     where: completed
       ? { deliveryPartnerId: partnerId, status: { in: [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED] } }
-      : { deliveryPartnerId: partnerId, status: { in: [OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY] } },
+      : { deliveryPartnerId: partnerId, status: { in: [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY] } },
     include: orderInclude,
     orderBy: { updatedAt: 'desc' },
   });

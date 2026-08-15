@@ -9,8 +9,8 @@ import { prisma } from '../config/database';
 const terminal = new Set<OrderStatus>([OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED]);
 const transitions: Partial<Record<OrderStatus, OrderStatus[]>> = {
   [OrderStatus.PENDING]: [OrderStatus.ACCEPTED, OrderStatus.CANCELLED],
-  [OrderStatus.ACCEPTED]: [OrderStatus.PACKING, OrderStatus.CANCELLED],
-  [OrderStatus.PACKING]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.CANCELLED],
+  [OrderStatus.ACCEPTED]: [OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
+  [OrderStatus.PACKING]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
   [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
   [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED, OrderStatus.FAILED, OrderStatus.RETURNED],
 };
@@ -34,6 +34,11 @@ async function partnerFor(userId: number) {
   const partner = await repo.findPartnerByUserId(userId);
   if (!partner || !partner.user.isActive) throw new AppError('Delivery partner profile not found or inactive.', HTTP_STATUS.FORBIDDEN);
   
+  if (!partner.isOnline) {
+    await repo.updatePartner(partner.id, { isOnline: true });
+    partner.isOnline = true;
+  }
+
   if (!partner.isAvailable) {
     const activeCount = await prisma.order.count({
       where: {
@@ -43,7 +48,7 @@ async function partnerFor(userId: number) {
     });
     if (activeCount === 0) {
       await repo.updatePartner(partner.id, { isAvailable: true });
-      return { ...partner, isAvailable: true };
+      return { ...partner, isAvailable: true, isOnline: true };
     }
   }
   
@@ -75,12 +80,32 @@ export async function myOrders(userId: number, completed: boolean) { const partn
 
 export async function acceptOrder(userId: number, orderId: number) {
   const partner = await partnerFor(userId);
-  if (!partner.isAvailable || !partner.isOnline) throw new AppError('You must be online and available to accept orders.', HTTP_STATUS.CONFLICT);
+  if (!partner.isOnline) {
+    await repo.updatePartner(partner.id, { isOnline: true });
+    partner.isOnline = true;
+  }
+  if (!partner.isAvailable) {
+    const activeCount = await prisma.order.count({
+      where: {
+        deliveryPartnerId: partner.id,
+        status: { notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED] }
+      }
+    });
+    if (activeCount === 0) {
+      await repo.updatePartner(partner.id, { isAvailable: true });
+      partner.isAvailable = true;
+    } else {
+      throw new AppError('You already have an active order in progress. Complete it before accepting another.', HTTP_STATUS.CONFLICT);
+    }
+  }
   const order = await requireOrder(orderId);
-  const acceptableStatuses: OrderStatus[] = [OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP];
-  if (!acceptableStatuses.includes(order.status) || order.deliveryPartnerId) throw new AppError('This order is no longer available.', HTTP_STATUS.CONFLICT);
-  const updated = await repo.updateOrderWithHistory(orderId, order.status, { deliveryPartner: { connect: { id: partner.id } } });
-  await repo.updatePartner(partner.id, { isAvailable: false });
+  const acceptableStatuses: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP];
+  if (!acceptableStatuses.includes(order.status) || order.deliveryPartnerId) {
+    throw new AppError('This order is no longer available.', HTTP_STATUS.CONFLICT);
+  }
+  const nextStatus = order.status === OrderStatus.PENDING ? OrderStatus.ACCEPTED : order.status;
+  const updated = await repo.updateOrderWithHistory(orderId, nextStatus, { deliveryPartner: { connect: { id: partner.id } } });
+  await repo.updatePartner(partner.id, { isAvailable: false, isOnline: true });
   emitOrderEvent('deliveryAccepted', updated);
   emitOrderEvent('deliveryAssigned', updated);
   return updated;
@@ -131,10 +156,11 @@ export async function adminUpdateOrderStatus(orderId: number, status: OrderStatu
 export async function assignPartner(orderId: number, partnerId: number) {
   const order = await requireOrder(orderId); const partner = await repo.findPartnerById(partnerId);
   if (!partner) throw new AppError('Delivery partner not found.', HTTP_STATUS.NOT_FOUND);
-  const assignableStatuses: OrderStatus[] = [OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP];
-  if (!assignableStatuses.includes(order.status) || order.deliveryPartnerId) throw new AppError('Only unassigned confirmed orders can be assigned.', HTTP_STATUS.CONFLICT);
-  const updated = await repo.updateOrderWithHistory(orderId, order.status, { deliveryPartner: { connect: { id: partnerId } } });
-  await repo.updatePartner(partnerId, { isAvailable: false }); emitOrderEvent('deliveryAssigned', updated); return updated;
+  const assignableStatuses: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP];
+  if (!assignableStatuses.includes(order.status) || order.deliveryPartnerId) throw new AppError('Only unassigned active orders can be assigned.', HTTP_STATUS.CONFLICT);
+  const nextStatus = order.status === OrderStatus.PENDING ? OrderStatus.ACCEPTED : order.status;
+  const updated = await repo.updateOrderWithHistory(orderId, nextStatus, { deliveryPartner: { connect: { id: partnerId } } });
+  await repo.updatePartner(partnerId, { isAvailable: false, isOnline: true }); emitOrderEvent('deliveryAssigned', updated); return updated;
 }
 
 export async function adminOrders(query: { status?: OrderStatus; search?: string; page: number; limit: number }) {
