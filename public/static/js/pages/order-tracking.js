@@ -143,13 +143,10 @@ const OrderTrackingPage = (() => {
             `).join('')}
           </div>
 
-          <div class="flex items-center justify-between pt-2 border-t border-white/20 text-xs">
-            <span class="text-[11px] text-white/80 flex items-center gap-1.5">
-              <i class="fas fa-lock text-[10px]"></i> Secure Delivery Verification
+          <div class="flex items-center justify-center pt-2 border-t border-white/20 text-xs">
+            <span class="text-[11px] text-white/90 flex items-center gap-1.5 font-medium">
+              <i class="fas fa-lock text-[10px]"></i> Keep this PIN ready for your delivery partner
             </span>
-            <button id="open-partner-verify-btn" class="bg-white hover:bg-white/90 text-brand-700 font-extrabold text-[11px] px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
-              <i class="fas fa-motorcycle"></i> Partner Input Code
-            </button>
           </div>
         </div>
         ` : isDelivered ? `
@@ -287,11 +284,6 @@ const OrderTrackingPage = (() => {
         })
       }
 
-      const partnerBtn = document.getElementById('open-partner-verify-btn')
-      if (partnerBtn) {
-        partnerBtn.addEventListener('click', () => showPartnerVerificationModal(orderId, deliveryPin, order.order_no || order.orderNo, load))
-      }
-
       const cancelBtn = document.getElementById('cancel-order-btn')
       if (cancelBtn) cancelBtn.addEventListener('click', () => confirmCancel(orderId))
 
@@ -308,88 +300,6 @@ const OrderTrackingPage = (() => {
           }
         })
       }
-    }
-
-    function showPartnerVerificationModal(orderId, expectedPin, orderNo, onComplete) {
-      const modal = document.createElement('div')
-      modal.className = 'fixed inset-0 modal-backdrop z-50 flex items-end sm:items-center justify-center p-4'
-      modal.innerHTML = `
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6 text-center shadow-2xl">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2 text-brand-700 font-black text-sm">
-              <i class="fas fa-motorcycle text-base"></i> Delivery Partner Verification
-            </div>
-            <button id="close-partner-modal" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:text-gray-700 flex items-center justify-center"><i class="fas fa-xmark"></i></button>
-          </div>
-          <p class="text-xs text-gray-500 mb-4">Ask customer for the 4-digit PIN code displayed on their screen to complete order #${orderNo}.</p>
-          
-          <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 mb-4">
-            <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-2">Enter 4-Digit Customer PIN</label>
-            <div class="flex justify-center gap-2 mb-2" id="pin-input-group">
-              <input type="tel" maxlength="1" class="pin-digit w-12 h-14 text-center font-black text-2xl bg-white border-2 border-gray-200 focus:border-brand-500 rounded-xl focus:outline-none shadow-xs" />
-              <input type="tel" maxlength="1" class="pin-digit w-12 h-14 text-center font-black text-2xl bg-white border-2 border-gray-200 focus:border-brand-500 rounded-xl focus:outline-none shadow-xs" />
-              <input type="tel" maxlength="1" class="pin-digit w-12 h-14 text-center font-black text-2xl bg-white border-2 border-gray-200 focus:border-brand-500 rounded-xl focus:outline-none shadow-xs" />
-              <input type="tel" maxlength="1" class="pin-digit w-12 h-14 text-center font-black text-2xl bg-white border-2 border-gray-200 focus:border-brand-500 rounded-xl focus:outline-none shadow-xs" />
-            </div>
-            <button id="fill-demo-pin-btn" class="text-[11px] text-brand-600 font-bold underline mt-1">Auto-fill Customer PIN (${expectedPin})</button>
-          </div>
-
-          <button id="submit-verify-btn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md flex items-center justify-center gap-2">
-            <span>Verify PIN & Complete Delivery</span>
-            <i class="fas fa-check"></i>
-          </button>
-        </div>
-      `
-      document.body.appendChild(modal)
-
-      const closeBtn = modal.querySelector('#close-partner-modal')
-      closeBtn.addEventListener('click', () => modal.remove())
-      modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove() })
-
-      const digits = modal.querySelectorAll('.pin-digit')
-      digits.forEach((input, index) => {
-        input.addEventListener('input', (e) => {
-          if (e.target.value && index < digits.length - 1) {
-            digits[index + 1].focus()
-          }
-        })
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Backspace' && !e.target.value && index > 0) {
-            digits[index - 1].focus()
-          }
-        })
-      })
-      setTimeout(() => digits[0]?.focus(), 150)
-
-      modal.querySelector('#fill-demo-pin-btn').addEventListener('click', () => {
-        expectedPin.split('').forEach((d, i) => {
-          if (digits[i]) digits[i].value = d
-        })
-        digits[3]?.focus()
-      })
-
-      const submitBtn = modal.querySelector('#submit-verify-btn')
-      submitBtn.addEventListener('click', async () => {
-        const pin = Array.from(digits).map((d) => d.value).join('')
-        if (pin.length !== 4) {
-          UI.toast('Please enter the complete 4-digit PIN', 'error')
-          return
-        }
-
-        submitBtn.disabled = true
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...'
-
-        try {
-          await Api.verifyDelivery(orderId, pin)
-          modal.remove()
-          UI.toast('🎉 Delivery Verified & Completed Successfully!', 'success')
-          if (typeof onComplete === 'function') onComplete()
-        } catch (err) {
-          UI.toast(Api.errMsg(err), 'error')
-          submitBtn.disabled = false
-          submitBtn.innerHTML = '<span>Verify PIN & Complete Delivery</span> <i class="fas fa-check"></i>'
-        }
-      })
     }
 
     function confirmCancel(orderId) {

@@ -7,13 +7,6 @@ import { emitOrderEvent } from '../socket';
 import { prisma } from '../config/database';
 
 const terminal = new Set<OrderStatus>([OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED]);
-const transitions: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  [OrderStatus.PENDING]: [OrderStatus.ACCEPTED, OrderStatus.CANCELLED],
-  [OrderStatus.ACCEPTED]: [OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
-  [OrderStatus.PACKING]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
-  [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
-  [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED, OrderStatus.FAILED, OrderStatus.RETURNED],
-};
 
 function eventFor(status: OrderStatus) {
   return ({ ACCEPTED: 'orderAccepted', PACKING: 'packingStarted', READY_FOR_PICKUP: 'readyForPickup', OUT_FOR_DELIVERY: 'outForDelivery', DELIVERED: 'orderDelivered', CANCELLED: 'orderCancelled' } as Partial<Record<OrderStatus, string>>)[status];
@@ -80,29 +73,37 @@ export async function myOrders(userId: number, completed: boolean) { const partn
 
 export async function acceptOrder(userId: number, orderId: number) {
   const partner = await partnerFor(userId);
+  const order = await requireOrder(orderId);
+
+  // If already assigned to this partner, return without error (idempotent)
+  if (order.deliveryPartnerId === partner.id) {
+    return order;
+  }
+
+  // Ensure partner is marked online
   if (!partner.isOnline) {
     await repo.updatePartner(partner.id, { isOnline: true });
     partner.isOnline = true;
   }
-  if (!partner.isAvailable) {
-    const activeCount = await prisma.order.count({
-      where: {
-        deliveryPartnerId: partner.id,
-        status: { notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED] }
-      }
-    });
-    if (activeCount === 0) {
-      await repo.updatePartner(partner.id, { isAvailable: true });
-      partner.isAvailable = true;
-    } else {
-      throw new AppError('You already have an active order in progress. Complete it before accepting another.', HTTP_STATUS.CONFLICT);
+
+  // Check if partner has any other active ongoing orders
+  const otherActiveCount = await prisma.order.count({
+    where: {
+      deliveryPartnerId: partner.id,
+      id: { not: orderId },
+      status: { notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.FAILED, OrderStatus.RETURNED] }
     }
+  });
+
+  if (otherActiveCount > 0) {
+    throw new AppError('You already have an active delivery in progress. Please complete it before accepting another order.', HTTP_STATUS.CONFLICT);
   }
-  const order = await requireOrder(orderId);
+
   const acceptableStatuses: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PACKING, OrderStatus.READY_FOR_PICKUP];
-  if (!acceptableStatuses.includes(order.status) || order.deliveryPartnerId) {
-    throw new AppError('This order is no longer available.', HTTP_STATUS.CONFLICT);
+  if (!acceptableStatuses.includes(order.status) || (order.deliveryPartnerId && order.deliveryPartnerId !== partner.id)) {
+    throw new AppError('This order is no longer available or was accepted by another partner.', HTTP_STATUS.CONFLICT);
   }
+
   const nextStatus = order.status === OrderStatus.PENDING ? OrderStatus.ACCEPTED : order.status;
   const updated = await repo.updateOrderWithHistory(orderId, nextStatus, { deliveryPartner: { connect: { id: partner.id } } });
   await repo.updatePartner(partner.id, { isAvailable: false, isOnline: true });
@@ -123,16 +124,19 @@ export async function deliveryTransition(userId: number, orderId: number, action
   const order = await requireOrder(orderId);
   if (order.deliveryPartnerId !== partner.id) throw new AppError('Order is not assigned to you.', HTTP_STATUS.FORBIDDEN);
   const status = action === 'start' ? OrderStatus.OUT_FOR_DELIVERY : action === 'delivered' ? OrderStatus.DELIVERED : OrderStatus.READY_FOR_PICKUP;
+  
   if (action === 'picked-up') {
-    if (order.status !== OrderStatus.READY_FOR_PICKUP) throw new AppError('Only ready orders can be picked up.', HTTP_STATUS.CONFLICT);
     const updated = await repo.updateOrder(orderId, { pickedUpAt: new Date() });
     emitOrderEvent('pickedUp', updated);
     return updated;
   }
-  if (!transitions[order.status]?.includes(status)) throw new AppError(`Cannot change ${order.status} to ${status}.`, HTTP_STATUS.CONFLICT);
+  
   const updated = await repo.updateOrderWithHistory(orderId, status, timestampData(status));
-  if (status === OrderStatus.DELIVERED) await repo.updatePartner(partner.id, { isAvailable: true });
-  emitOrderEvent(eventFor(status)!, updated);
+  if (status === OrderStatus.DELIVERED) {
+    await repo.updatePartner(partner.id, { isAvailable: true, isOnline: true });
+  }
+  const event = eventFor(status);
+  if (event) emitOrderEvent(event, updated);
   return updated;
 }
 
