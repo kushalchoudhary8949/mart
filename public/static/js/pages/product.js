@@ -25,36 +25,46 @@ const ProductPage = (() => {
     `
 
     try {
-      const { data } = await Api.getProduct(params.slug)
-      currentProduct = data.product
+      const slug = params?.slug || ''
+      const res = await Api.getProduct(slug)
+      const data = res?.data || res
+      const product = data?.product || data?.data?.product || data
+      if (!product || !product.id) {
+        throw new Error('Product not found')
+      }
+      currentProduct = product
+      const related = data?.related || data?.data?.related || []
+
       try {
-        const imagesRes = await Api.getProductImages(data.product.id)
-        if (imagesRes?.data?.images?.length) {
-          currentProduct = { ...data.product, images: imagesRes.data.images }
+        const imagesRes = await Api.getProductImages(product.id)
+        const gallery = imagesRes?.data?.images || imagesRes?.images
+        if (Array.isArray(gallery) && gallery.length > 0) {
+          currentProduct = { ...product, images: gallery }
         }
       } catch (imagesErr) {
         // fall back to the product payload images
       }
-      renderProduct(currentProduct, data.related)
+      renderProduct(currentProduct, related)
     } catch (e) {
       document.getElementById('product-container').innerHTML = UI.errorState(
         'Failed to load product details',
         Api.errMsg(e),
-        `ProductPage.render({ slug: '${params.slug}' })`
+        `ProductPage.render({ slug: '${params?.slug || ''}' })`
       )
     }
   }
 
   function renderProduct(p, related) {
     const discount = UI.discountPercent(p.price, p.mrp)
-    const inWishlist = Store.state.wishlistIds.has(p.id)
+    const inWishlist = Store.state.wishlistIds?.has ? Store.state.wishlistIds.has(p.id) : (Array.isArray(Store.state.wishlistIds) ? Store.state.wishlistIds.includes(p.id) : false)
+    const outOfStock = (p.stock !== undefined && p.stock !== null) ? Number(p.stock) <= 0 : false
     const resolvedImage = UI.resolveProductImage(p)
-    const images = (Array.isArray(p.images) && p.images.length > 0) ? p.images.map(img => typeof img === 'string' ? img : img.url) : [resolvedImage]
+    const images = (Array.isArray(p.images) && p.images.length > 0) ? p.images.map(img => typeof img === 'string' ? img : (img?.url || resolvedImage)) : [resolvedImage]
     let activeImgIdx = 0
 
     const renderGalleryHtml = () => `
       <div class="relative aspect-square max-w-md mx-auto bg-gray-50">
-        <img id="product-gallery-img" src="${images[activeImgIdx] || UI.placeholderImage}" alt="${UI.escapeHtml(p.name)}" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null; this.src=UI.placeholderImage" />
+        <img id="product-gallery-img" src="${images[activeImgIdx] || UI.placeholderImage}" alt="${UI.escapeHtml(p.name || '')}" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null; this.src=UI.placeholderImage" />
         ${discount > 0 ? `<span class="absolute top-3 left-3 bg-accent-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">${discount}% OFF</span>` : ''}
         <button data-action="toggle-wishlist-detail" class="absolute top-3 right-3 w-10 h-10 rounded-full bg-white shadow flex items-center justify-center ${inWishlist ? 'text-red-500' : 'text-gray-400'}">
           <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i>
@@ -74,12 +84,12 @@ const ProductPage = (() => {
         ${renderGalleryHtml()}
       </div>
       <div class="px-4 py-4">
-        <p class="text-xs font-semibold text-brand-600 uppercase mb-1"><a href="#/category/${p.category_slug}">${p.category_name}</a></p>
-        <h1 class="text-xl font-bold text-gray-800 mb-1">${UI.escapeHtml(p.name)}</h1>
-        <p class="text-sm text-gray-400 mb-2">${p.unit}</p>
+        <p class="text-xs font-semibold text-brand-600 uppercase mb-1"><a href="#/category/${p.category_slug || ''}">${UI.escapeHtml(p.category_name || '')}</a></p>
+        <h1 class="text-xl font-bold text-gray-800 mb-1">${UI.escapeHtml(p.name || '')}</h1>
+        <p class="text-sm text-gray-400 mb-2">${UI.escapeHtml(p.unit || '')}</p>
         <div class="flex items-center gap-1 mb-3">
-          ${UI.starRating(p.rating)}
-          <span class="text-sm text-gray-500 ml-1">${p.rating} (${p.rating_count} reviews)</span>
+          ${UI.starRating(p.rating || 0)}
+          <span class="text-sm text-gray-500 ml-1">${p.rating || 0} (${p.rating_count || 0} reviews)</span>
         </div>
         <div class="flex items-center gap-2 mb-1">
           <span class="text-2xl font-extrabold text-gray-900">${UI.money(p.price)}</span>
@@ -148,23 +158,33 @@ const ProductPage = (() => {
       }
     }
     bindGalleryEvents()
+
     // Sticky add-to-cart bar with quantity control
     const stickyBar = document.getElementById('product-sticky-bar')
-    if (!outOfStock) {
+    if (!outOfStock && stickyBar) {
       stickyBar.classList.remove('hidden')
       let qty = 1
       const qtyValueEl = document.getElementById('qty-value')
-      document.querySelector('[data-action="qty-minus"]').addEventListener('click', () => {
-        qty = Math.max(1, qty - 1)
-        qtyValueEl.textContent = qty
-      })
-      document.querySelector('[data-action="qty-plus"]').addEventListener('click', () => {
-        qty = Math.min(p.stock, qty + 1)
-        qtyValueEl.textContent = qty
-      })
-      document.getElementById('add-to-cart-sticky').addEventListener('click', async () => {
-        await Actions.addToCart(p.id, qty)
-      })
+      const minusBtn = document.querySelector('[data-action="qty-minus"]')
+      const plusBtn = document.querySelector('[data-action="qty-plus"]')
+      const addBtn = document.getElementById('add-to-cart-sticky')
+      if (minusBtn && qtyValueEl) {
+        minusBtn.addEventListener('click', () => {
+          qty = Math.max(1, qty - 1)
+          qtyValueEl.textContent = qty
+        })
+      }
+      if (plusBtn && qtyValueEl) {
+        plusBtn.addEventListener('click', () => {
+          qty = Math.min(Number(p.stock) || 99, qty + 1)
+          qtyValueEl.textContent = qty
+        })
+      }
+      if (addBtn) {
+        addBtn.addEventListener('click', async () => {
+          await Actions.addToCart(p.id, qty)
+        })
+      }
     }
   }
 

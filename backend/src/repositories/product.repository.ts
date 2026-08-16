@@ -117,7 +117,13 @@ export async function findAllAdmin() {
  * Find a product by its slug (includes category and gallery images).
  */
 export async function findBySlug(slug: string, activeOnly = true) {
-  const where: Prisma.ProductWhereInput = { slug };
+  const isNumeric = /^\d+$/.test(slug);
+  const where: Prisma.ProductWhereInput = {
+    OR: [
+      { slug },
+      ...(isNumeric ? [{ id: Number(slug) }] : []),
+    ],
+  };
   if (activeOnly) {
     where.isActive = true;
   }

@@ -48,6 +48,7 @@
   Router.add('/category/:slug', CategoryDetailPage.render)
   Router.add('/search', SearchPage.render)
   Router.add('/product/:slug', ProductPage.render)
+  Router.add('/products/:slug', ProductPage.render)
   Router.add('/cart', CartPage.render)
   Router.add('/checkout', CheckoutPage.render)
   Router.add('/order-success/:id', OrderSuccessPage.render)

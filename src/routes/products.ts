@@ -121,13 +121,15 @@ products.get('/products', async (c) => {
 
 /** GET /api/products/:slug - product detail */
 products.get('/products/:slug', async (c) => {
-  const slug = c.req.param('slug')
+  const rawSlug = c.req.param('slug')
+  const slug = decodeURIComponent(rawSlug)
+  const isNumeric = /^\d+$/.test(slug)
   const product = await c.env.DB.prepare(
     `SELECT p.*, c.name as category_name, c.slug as category_slug
      FROM products p JOIN categories c ON c.id = p.category_id
-     WHERE p.slug = ? AND p.is_active = 1`
+     WHERE (p.slug = ? OR (? = 1 AND p.id = ?)) AND p.is_active = 1`
   )
-    .bind(slug)
+    .bind(slug, isNumeric ? 1 : 0, isNumeric ? Number(slug) : -1)
     .first()
 
   if (!product) return c.json({ error: 'Product not found' }, 404)
